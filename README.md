@@ -27,3 +27,21 @@ python scripts/inference_service.py --server --model_path nvidia/GR00T-N1.5-3B -
 python sim_main.py --device cuda:0 --enable_cameras --task Isaac-PickPlace-Cylinder-G129-Dex3-Joint --action_source gr00t --robot_type g129 --enable_dex3_dds 
 ```
 
+# 微调数据集
+[G1抓水果 NVIDA](https://huggingface.co/datasets/nvidia/PhysicalAI-Robotics-GR00T-Teleop-G1/tree/main)
+——输入的观测： 
+```
+"video.rs_view": camera_obs["rs_view"], # 640*480
+"state.left_arm": robot_state["left_arm"],
+"state.right_arm": robot_state["right_arm"], 
+"state.left_hand": robot_state["left_hand"],
+"state.right_hand": robot_state["right_hand"],
+"state.waist": robot_state["waist"],
+"annotation.human.action.task_description": ["Pick up cylinder and  put it on the plane."]
+```
+——输出：28维度
+双手(14) + 双臂(14)
+左臂引索[15,21]、右臂引索[22,28]、左手[29,35]、右手[36,42]
+
+
+[G1堆叠放置物块 宇树](https://huggingface.co/datasets/unitreerobotics/G1_Dex3_BlockStacking_Dataset/tree/main)
