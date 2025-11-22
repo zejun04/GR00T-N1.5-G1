@@ -1,0 +1,86 @@
+dataset_list=(
+    "datasets/g1-pick-apple/" "datasets/g1-pick-pear/" "datasets/g1-pick-grapes/" "datasets/g1-pick-starfruit/"
+)
+ 
+python scripts/gr00t_finetune.py \
+    --no-tune_diffusion_model \
+    --dataset-path ${dataset_list[@]} \
+    --num-gpus 1 --batch-size 32  --output-dir ~/checkpoints/full-g1-mix-fruits/  \
+    --data-config unitree_g1 --max-steps 20000
+
+
+python scripts/eval_policy.py --plot \
+   --embodiment_tag new_embodiment \
+   --model_path checkpoints-2/full-g1-mix-fruits/checkpoint-10000/ \
+   --data_config unitree_g1 \
+   --dataset_path datasets/g1-pick-apple/ \
+   --video_backend decord \
+   --modality_keys left_arm right_arm
+   
+   
+
+G1选择----embodiment_tag为new_embodiment，凡是不在nvidia官方tag(EmbodimentTag.GR1、EmbodimentTag.OXE_DROID、EmbodimentTag.GENIE1_GRIPPER)出现的机器人都选择new_embodiment,且需要准备对应的--data_config
+
+    video_keys = ["video.rs_view"]
+    state_keys = ["state.left_arm", "state.right_arm", "state.left_hand", "state.right_hand"]
+    action_keys = ["action.left_arm", "action.right_arm", "action.left_hand", "action.right_hand"]
+    language_keys = ["annotation.human.task_description"]
+    
+    
+# isaac sim安装(ubuntu20.04 3090)
+
+下载地址https://docs.isaacsim.omniverse.nvidia.com/4.5.0/installation/download.html
+下载isaac sim 4.5.0 linux(约7g)(对于50系显卡请安装isaac sim 5.0.0)
+
+mkdir ~/isaacsim && cd isaacsim
+将下载的isaacsim.zip 移动到~/isaacsim 并解压
+
+./post_install.sh
+./isaac-sim.selector.sh
+直接点START
+等待终端：[193.852s] Isaac Sim Full App is loaded.
+
+添加环境变量
+```
+sudo gedit ~/.bashrc
+
+在~/.bashrc中加入以下内容
+# Isaac Sim root directory(Isaac_sim安装目录)
+export ISAACSIM_PATH="${HOME}/isaacsim"
+# Isaac Sim python executable
+export ISAACSIM_PYTHON_EXE="${ISAACSIM_PATH}/python.sh"
+
+```
+
+检查模拟器能否运行：
+```
+${ISAACSIM_PATH}/isaac-sim.sh
+```
+
+检查模拟器是否能从独立的python脚本运行
+```
+# checks that python path is set correctly(output: Isaac Sim configuration is now complete.)
+${ISAACSIM_PYTHON_EXE} -c "print('Isaac Sim configuration is now complete.')"
+# checks that Isaac Sim can be launched from python
+${ISAACSIM_PYTHON_EXE} ${ISAACSIM_PATH}/standalone_examples/api/isaacsim.core.api/add_cubes.py
+```
+
+# isaac lab安装
+
+```
+git clone https://github.com/isaac-sim/IsaacLab.git
+
+cd Isaaclab
+
+# create a symbolic link(请根据自己路径填写)
+ln -s path_to_isaac_sim _isaac_sim 
+
+./isaaclab.sh --conda unitree_sim_env
+conda activate unitree_sim_env
+./isaaclab.sh --install
+```
+
+测试是否安装成功
+```
+./isaaclab.sh -p scripts/tutorials/00_sim/create_empty.py
+```
