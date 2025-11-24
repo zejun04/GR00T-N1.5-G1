@@ -71,7 +71,7 @@ from gr00t.model.policy import Gr00tPolicy
 class ArgsConfig:
     """Command line arguments for the inference service."""
 
-    model_path: str = "checkpoints-2/full-g1-mix-fruits/checkpoint-50000" #"nvidia/GR00T-N1.5-3B" checkpoints/full-g1-mix-fruits/checkpoint-20000
+    model_path: str = "checkpoints-2/full-g1-mix-fruits/checkpoint-46000" #"nvidia/GR00T-N1.5-3B" checkpoints/full-g1-mix-fruits/checkpoint-20000  checkpoints-2/full-g1-mix-fruits/checkpoint-50000
     """Path to the model checkpoint directory."""
 
     embodiment_tag: Literal[tuple(EMBODIMENT_TAG_MAPPING.keys())] = "gr1"
@@ -182,7 +182,9 @@ def main(args: ArgsConfig):
         # see gr00t/utils/data.py for more details
         data_config = load_data_config(args.data_config)
         modality_config = data_config.modality_config()
+        print("modality_config",modality_config)
         modality_transform = data_config.transform()
+        # print("modality_transform",modality_transform)
 
         policy = Gr00tPolicy(
             model_path=args.model_path,
@@ -191,7 +193,7 @@ def main(args: ArgsConfig):
             embodiment_tag=args.embodiment_tag,
             denoising_steps=args.denoising_steps,
         )
-
+        
         # Setup TensorRT if requested
         if args.use_tensorrt:
             print(f"Setting up TensorRT engines from: {args.trt_engine_path}")

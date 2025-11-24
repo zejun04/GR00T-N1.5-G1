@@ -21,7 +21,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 
 from gr00t.model.policy import Gr00tPolicy
-
+import numpy as np
 # Patch json to handle numpy arrays
 json_numpy.patch()
 
@@ -60,10 +60,30 @@ class HTTPInferenceServer:
                 )
 
             obs = payload["observation"]
-            # print(obs)
+            print("观测是：", obs)
             # Run inference
             action = self.policy.get_action(obs)
-            # print(action)
+            # debug专用
+            # if 'state.left_arm' in obs:
+            #     if 'action.left_arm' in action:
+            #         action['action.left_arm'] = np.full_like(action['action.left_arm'], -1.0)
+                    
+            
+            # if 'state.right_arm' in obs:
+            #     if 'action.right_arm' in action:
+            #         action['action.right_arm'] = np.full_like(action['action.right_arm'], -2.0)
+                    
+            
+            # if 'state.left_hand' in obs:
+            #     if 'action.left_hand' in action:
+            #         action['action.left_hand'] = np.full_like(action['action.left_hand'], -3.0)
+                    
+            
+            # if 'state.right_hand' in obs:
+            #     if 'action.right_hand' in action:
+            #         action['action.right_hand'] = np.full_like(action['action.right_hand'], -4.0)
+
+            print("动作是:",action)
             # Return action as JSON with numpy arrays
             return JSONResponse(content=action)
 

@@ -295,6 +295,7 @@ class Gr00tPolicy(BasePolicy):
 
         self._modality_transform.set_metadata(metadata)
         self.metadata = metadata
+        
 
     def _load_horizons(self):
         """Load the horizons needed for the model."""
