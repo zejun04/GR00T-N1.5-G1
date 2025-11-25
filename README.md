@@ -66,3 +66,6 @@ python sim_main.py --device cuda:0 --enable_cameras --task Isaac-PickPlace-Cylin
 
 
 [G1堆叠放置物块 宇树](https://huggingface.co/datasets/unitreerobotics/G1_Dex3_BlockStacking_Dataset/tree/main)
+
+
+# 四、其他步骤文档说明位于/doc
