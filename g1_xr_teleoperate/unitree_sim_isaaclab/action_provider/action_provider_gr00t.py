@@ -158,7 +158,7 @@ class GR00TActionProvider:
         try:
             # 准备观测数据
             observation = self.prepare_observation()
-            print("观测：",observation)
+            # print("观测：",observation)
             
             # 使用json_numpy序列化
             json_data = json_numpy.dumps({"observation": observation})
@@ -219,7 +219,7 @@ class GR00TActionProvider:
                     print(f"⚠️ 步骤索引 {step_idx} 超出范围，使用最后一步")
             else:
                 current_action[key] = sequence
-        print("动作是：",current_action)
+        # print("动作是：",current_action)
         return current_action
     
     
@@ -271,10 +271,18 @@ class GR00TActionProvider:
             # 映射GR00T动作到完整的关节空间[左闭，右开)
             # action.left/right_arm/hand is provided by GR00T
             # index,example 15-21 is used for isaac_sim
+            # fruit dataset
+            # action_mappings = [
+            #     ('action.left_arm', 15, 22),    # 左臂 -> 索引15-21
+            #     ('action.left_hand', 29, 36),   # 右臂 -> 索引22-28
+            #     ('action.right_arm', 22, 29),   # 左手 -> 索引29-35
+            #     ('action.right_hand', 36, 43)   # 右手 -> 索引36-42
+            # ]
+
             action_mappings = [
                 ('action.left_arm', 15, 22),    # 左臂 -> 索引15-21
-                ('action.left_hand', 29, 36),   # 右臂 -> 索引22-28
-                ('action.right_arm', 22, 29),   # 左手 -> 索引29-35
+                ('action.right_arm', 22, 29),   # 右臂 -> 索引22-28
+                ('action.left_hand', 29, 36),   # 左手 -> 索引29-35
                 ('action.right_hand', 36, 43)   # 右手 -> 索引36-42
             ]
             
@@ -308,7 +316,7 @@ class GR00TActionProvider:
             
             # 对于未映射的部分（腿部、腰部等），保持为零
             # 这些部分将由仿真环境处理或保持默认位置
-            print("G1_action",full_action)
+            # print("G1_action",full_action)
             return full_action
             
         except Exception as e:
@@ -363,17 +371,30 @@ class GR00TActionProvider:
             #     "annotation.human.action.task_description": ["Pick up the red apple and put it on the plate"]
             # }
 
+            # fruit dataset
+            # observation = {
+            #     "video.rs_view": camera_obs["rs_view"],
+            #     "state.left_arm": robot_state["left_arm"],
+            #     "state.left_hand": robot_state["left_hand"],
+            #     "state.right_arm": robot_state["right_arm"], 
+            #     "state.right_hand": robot_state["right_hand"],
+            #     "annotation.human.action.task_description": ["Pick up the red cube and put it on the plate"]
+            # }
+
+            # block dataset
             observation = {
-                "video.rs_view": camera_obs["rs_view"],
+                "video.cam_left_high": camera_obs["cam_left_high"],
+                "video.cam_left_wrist": camera_obs["cam_left_wrist"],
+                "video.cam_right_wrist": camera_obs["cam_right_wrist"],
                 "state.left_arm": robot_state["left_arm"],
-                "state.left_hand": robot_state["left_hand"],
                 "state.right_arm": robot_state["right_arm"], 
+                "state.left_hand": robot_state["left_hand"],
                 "state.right_hand": robot_state["right_hand"],
-                "annotation.human.action.task_description": ["Pick up the red apple and put it on the plate"]
+                "annotation.human.task_description": ["stack three block"]
             }
             
-            print(f"指令：{observation['annotation.human.action.task_description']}")
-            #print("观测是：", observation)
+            print(f"指令：{observation['annotation.human.task_description']}")
+            # print("观测是：", observation)
             return observation
             
         except Exception as e:
@@ -384,63 +405,67 @@ class GR00TActionProvider:
         """
         从仿真环境获取相机图像并调整到GR00T期望的尺寸
         """
-        # if hasattr(self, '_debug_count'):
-        #     self._debug_count += 1
-        # else:
-        #     self._debug_count = 0
-        # try:
-        #     camera_data = {}
-        #     camera_image = None
-        #     target_cam_name = 'front_camera' 
+        if hasattr(self, '_debug_count'):
+            self._debug_count += 1
+        else:
+            self._debug_count = 0
             
-        #     # 直接从环境场景传感器(Scene Sensors)获取 (Isaac Lab 标准方式)
-        #     if hasattr(self.env, 'scene') and hasattr(self.env.scene, 'sensors'):
-        #         if target_cam_name in self.env.scene.sensors:
-        #             sensor = self.env.scene.sensors[target_cam_name]
-        #             if hasattr(sensor, 'data') and hasattr(sensor.data, 'output'):
-        #                 if 'rgb' in sensor.data.output:
-        #                     image_tensor = sensor.data.output['rgb']
-                            
-        #                     if isinstance(image_tensor, torch.Tensor):
-        #                         camera_image = image_tensor.clone().detach().cpu().numpy()
-        #                     else:
-        #                         camera_image = image_tensor
+        try:
+            camera_data = {}
+            target_cam_names = ['front_camera', 'left_wrist_camera', 'right_wrist_camera']
+            camera_mapping = {
+                'front_camera': 'cam_left_high',
+                'left_wrist_camera': 'cam_left_wrist', 
+                'right_wrist_camera': 'cam_right_wrist'
+            }
+            
+            # 直接从环境场景传感器(Scene Sensors)获取 (Isaac Lab 标准方式)
+            for cam_name in target_cam_names:
+                camera_image = None
+                
+                if hasattr(self.env, 'scene') and hasattr(self.env.scene, 'sensors'):
+                    if cam_name in self.env.scene.sensors:
+                        sensor = self.env.scene.sensors[cam_name]
+                        if hasattr(sensor, 'data') and hasattr(sensor.data, 'output'):
+                            if 'rgb' in sensor.data.output:
+                                image_tensor = sensor.data.output['rgb']
                                 
-        #                     # print(f"📷 获取到 {target_cam_name}: {camera_image.shape}")
-
-        #     opencv_image = camera_image.squeeze(axis=0)
-        #     cv2.cvtColor(opencv_image, cv2.COLOR_RGB2BGR, opencv_image)
-        #     time_stamp = time.strftime('%Y%m%d_%H%M%S') + f'{time.time()%1:.3f}'[1:]
-        #     save_dir = os.path.join(os.getcwd(), 'rs_img/')      # 当前终端目录/rs_img
-        #     os.makedirs(save_dir, exist_ok=True)                # 没有就自动建
-
+                                if isinstance(image_tensor, torch.Tensor):
+                                    camera_image = image_tensor.clone().detach().cpu().numpy()
+                                else:
+                                    camera_image = image_tensor
+                
+                # 处理获取到的图像
+                if camera_image is not None:
+                    # 如果是 RGBA (4通道)，去掉 Alpha 通道转为 RGB
+                    if camera_image.shape[-1] == 4:
+                        camera_image = camera_image[..., :3]
+                    
+                    processed_image = self._process_camera_image(camera_image)
+                    output_key = camera_mapping[cam_name]
+                    camera_data[output_key] = processed_image
+                    
+                else:
+                    print(f"⚠️ 未找到相机数据: {cam_name}")
+                    # 为缺失的相机提供测试数据
+                    test_data = self._get_test_camera_data()
+                    output_key = camera_mapping[cam_name]
+                    camera_data[output_key] = test_data
             
-        #     file_name = os.path.join(save_dir, f'{self._debug_count}.jpg')
-        #     cv2.imwrite(file_name, opencv_image)
-        #     if self._debug_count % 10 == 0: 
-        #         print('rs_view 已写入', file_name)
-
-        #     # 处理获取到的图像
-        #     if camera_image is not None:
-        #         # 如果是 RGBA (4通道)，去掉 Alpha 通道转为 RGB
-        #         if camera_image.shape[-1] == 4:
-        #             camera_image = camera_image[..., :3]
-        #         # print("camera shape:", camera_image.shape)
-        #         processed_image = self._process_camera_image(camera_image)
-        #         camera_data["rs_view"] = processed_image
-        #         return camera_data
-                
-        #     else:
-        #         print(f"⚠️ 未找到相机数据: {target_cam_name}")
-                
-        # except Exception as e:
-        #     logging.error(f"❌ 获取相机数据时出错: {e}")
-        #     import traceback
-        #     traceback.print_exc()
+            return camera_data
+            
+        except Exception as e:
+            logging.error(f"❌ 获取相机数据时出错: {e}")
+            import traceback
+            traceback.print_exc()
         
-        # 如果以上方法都失败，返回测试数据
+        # 如果以上方法都失败，返回所有相机的测试数据
         print("❌ 使用测试相机数据!")
-        return {"rs_view": self._get_test_camera_data()}
+        return {
+            "cam_left_high": self._get_test_camera_data('cam_left_high'),
+            "cam_left_wrist": self._get_test_camera_data('cam_left_wrist'), 
+            "cam_right_wrist": self._get_test_camera_data('cam_right_wrist')
+        }
     
     def _process_camera_image(self, image: np.ndarray) -> np.ndarray:
         """
@@ -534,7 +559,7 @@ class GR00TActionProvider:
             
             # 右手: 索引 36-42 (7个关节)
             state_data["right_hand"] = joint_pos[36:43].reshape(1, 7)
-            
+            print("机器人关节状态:",state_data["left_hand"])
             
             
             # Debug 打印
@@ -567,7 +592,7 @@ class GR00TActionProvider:
         self.session.close()
         print("🔒 GR00T Action Provider closed")
 
-    def _get_test_camera_data(self) -> np.ndarray:
+    def _get_test_camera_data(self, name) -> np.ndarray:
         """
         从外部视频文件读取图像作为测试相机数据
         
@@ -578,7 +603,13 @@ class GR00TActionProvider:
             video_path = None
             if video_path is None:
                 # 如果没有配置视频路径，使用默认测试视频
-                default_video = "/home/shenlan/GR00T-VLA/Isaac-GR00T/datasets/g1-pick-apple/videos/chunk-000/observation.images.ego_view/episode_000000.mp4"
+                if name == "cam_right_wrist":
+                    default_video = "/home/shenlan/GR00T-VLA/Isaac-GR00T/datasets/G1_Dex3_BlockStacking_Dataset/videos/chunk-000/observation.images.cam_right_wrist/episode_000000.mp4"
+                elif name == "cam_left_wrist":
+                    default_video = "/home/shenlan/GR00T-VLA/Isaac-GR00T/datasets/G1_Dex3_BlockStacking_Dataset/videos/chunk-000/observation.images.cam_left_wrist/episode_000000.mp4"
+                elif name == "cam_left_high":
+                    default_video = "/home/shenlan/GR00T-VLA/Isaac-GR00T/datasets/G1_Dex3_BlockStacking_Dataset/videos/chunk-000/observation.images.cam_left_high/episode_000000.mp4"
+
                 if os.path.exists(default_video):
                     video_path = default_video
                 else:

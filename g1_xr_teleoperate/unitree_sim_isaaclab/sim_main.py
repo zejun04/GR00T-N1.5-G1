@@ -20,7 +20,6 @@ from pathlib import Path
 # Isaac Lab AppLauncher
 from isaaclab.app import AppLauncher
 
-from image_server.image_server import ImageServer
 from dds.dds_create import create_dds_objects,create_dds_objects_replay
 # add command line arguments
 parser = argparse.ArgumentParser(description="Unitree Simulation")
@@ -33,6 +32,7 @@ parser.add_argument("--action_source", type=str, default="dds",
 # 可以添加GR00T特定的参数（可选）
 parser.add_argument("--gr00t_host", type=str, default="localhost", help="GR00T service host")
 parser.add_argument("--gr00t_port", type=int, default=8000, help="GR00T service port")
+
 
 parser.add_argument("--robot_type", type=str, default="g129", help="robot type")
 parser.add_argument("--enable_dex1_dds", action="store_true", help="enable gripper DDS")
@@ -50,7 +50,7 @@ parser.add_argument("--modify_light",  action="store_true", default=False, help=
 parser.add_argument("--modify_camera",  action="store_true", default=False,    help="modify camera")
 
 # performance analysis parameters
-parser.add_argument("--step_hz", type=int, default=100, help="control frequency")
+parser.add_argument("--step_hz", type=int, default=50, help="control frequency")
 parser.add_argument("--enable_profiling", action="store_true", default=True, help="enable performance analysis")
 parser.add_argument("--profile_interval", type=int, default=500, help="performance analysis report interval (steps)")
 
@@ -371,13 +371,7 @@ def main():
     # create controller
 
     if not args_cli.replay_data:
-        print("========= create image server =========")
-        try:
-            server = ImageServer(fps=30, Unit_Test=False)
-        except Exception as e:
-            print(f"Failed to create image server: {e}")
-            return
-        print("========= create image server success =========")
+
         print("========= create dds =========")
         try:
             reset_pose_dds,sim_state_dds,dds_manager = create_dds_objects(args_cli,env)

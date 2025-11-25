@@ -11,13 +11,26 @@ python scripts/gr00t_finetune.py \
 
 python scripts/eval_policy.py --plot \
    --embodiment_tag new_embodiment \
-   --model_path checkpoints-2/full-g1-mix-fruits/checkpoint-10000/ \
-   --data_config unitree_g1 \
-   --dataset_path datasets/g1-pick-apple/ \
+   --model_path checkpoints/full-g1-mix-fruits/checkpoint-40000/ \
+   --data_config unitree_g1_block \
+   --dataset_path datasets/G1_Dex3_BlockStacking_Dataset/ \
    --video_backend decord \
    --modality_keys left_arm right_arm
    
-   
+
+python scripts/gr00t_finetune.py \
+    --no-tune_diffusion_model \
+    --dataset-path datasets/G1_Dex3_BlockStacking_Dataset \
+    --num-gpus 1 --batch-size 32  --output-dir ./checkpoints/full-g1-mix-fruits/  \
+    --data-config unitree_g1_block --max-steps 30000
+    
+python scripts/inference_service.py --server --http-server --port 8000 --embodiment_tag new_embodiment --data_config unitree_g1_block
+
+python scripts/inference_service.py --server  --http-server --port 8000 --embodiment_tag new_embodiment --data_config unitree_g1_block
+
+
+python sim_main.py --device cuda:0 --enable_cameras --task Isaac-Stack-RgyBlock-G129-Dex3-Joint --action_source gr00t --robot_type g129 --enable_dex3_dds 
+
 
 G1选择----embodiment_tag为new_embodiment，凡是不在nvidia官方tag(EmbodimentTag.GR1、EmbodimentTag.OXE_DROID、EmbodimentTag.GENIE1_GRIPPER)出现的机器人都选择new_embodiment,且需要准备对应的--data_config
 

@@ -20,16 +20,16 @@ class TableRedBlockSceneCfg(InteractiveSceneCfg): # inherit from the interactive
     defines a complete scene containing robot, object, table, etc.
     """
     # 1. room wall configuration - simplified configuration to avoid rigid body property conflicts
-    room_walls = AssetBaseCfg(
-        prim_path="/World/envs/env_.*/Room",
-        init_state=AssetBaseCfg.InitialStateCfg(
-            pos=[0.0, 0.0, 0],  # room center point
-            rot=[1.0, 0.0, 0.0, 0.0]
-        ),
-        spawn=UsdFileCfg(
-            usd_path=f"{project_root}/assets/objects/small_warehouse_digital_twin/small_warehouse_digital_twin.usd",
-        ),
-    )
+    # room_walls = AssetBaseCfg(
+    #     prim_path="/World/envs/env_.*/Room",
+    #     init_state=AssetBaseCfg.InitialStateCfg(
+    #         pos=[0.0, 0.0, 0],  # room center point
+    #         rot=[1.0, 0.0, 0.0, 0.0]
+    #     ),
+    #     spawn=UsdFileCfg(
+    #         usd_path=f"{project_root}/assets/objects/small_warehouse_digital_twin/small_warehouse_digital_twin.usd",
+    #     ),
+    # )
 
     # 1. table configuration
     packing_table = AssetBaseCfg(
@@ -97,7 +97,7 @@ class TableRedBlockSceneCfg(InteractiveSceneCfg): # inherit from the interactive
                 rest_offset=0.0
             ),
             visual_material=sim_utils.PreviewSurfaceCfg(
-                diffuse_color=(0.9, 0.1, 0.0), metallic=0  # 红色
+                diffuse_color=(0.9, 0.01, 0.0), metallic=0  # 红色
             ),
             physics_material=sim_utils.RigidBodyMaterialCfg(
                 friction_combine_mode="max",

@@ -22,10 +22,10 @@ class CameraBaseCfg:
     def get_camera_config(
         cls,
         prim_path: str = "/World/envs/env_.*/Robot/d435_link/front_cam",
-        update_period: float = 0.02,
+        update_period: float = 0.033, # defualt 0.02s
         height: int = 480,
         width: int =  640,
-        focal_length: float = 10.6, # 7.6 修改相机的焦距(视角)
+        focal_length: float = 7.6, # 7.6 修改相机的焦距(视角)
         focus_distance: float = 400.0,
         horizontal_aperture: float = 20.0,
         clipping_range: tuple = (0.1, 1.0e5),
@@ -114,7 +114,7 @@ class CameraPresets:
             prim_path="/World/envs/env_.*/Robot/left_hand_base_link/left_wrist_camera",
             height=480,
             width=640,
-            update_period=0.02,
+            update_period=0.033,
             data_types=["rgb"],
             focal_length=12,
             focus_distance=400.0,
@@ -130,7 +130,7 @@ class CameraPresets:
             prim_path="/World/envs/env_.*/Robot/right_hand_base_link/right_wrist_camera",
             height=480,
             width=640,
-            update_period=0.02,
+            update_period=0.033,
             data_types=["rgb"],
             focal_length=12,
             focus_distance=400.0,

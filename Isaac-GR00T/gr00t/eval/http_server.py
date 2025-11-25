@@ -60,7 +60,7 @@ class HTTPInferenceServer:
                 )
 
             obs = payload["observation"]
-            print("观测是：", obs)
+            # print("观测是：", obs)
             # Run inference
             action = self.policy.get_action(obs)
             # debug专用
@@ -82,8 +82,7 @@ class HTTPInferenceServer:
             # if 'state.right_hand' in obs:
             #     if 'action.right_hand' in action:
             #         action['action.right_hand'] = np.full_like(action['action.right_hand'], -4.0)
-
-            print("动作是:",action)
+            # print("动作是:",action)
             # Return action as JSON with numpy arrays
             return JSONResponse(content=action)
 
