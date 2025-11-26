@@ -43,7 +43,7 @@ class DDSManager:
         self._init_dds()
         print("[DDSManager] DDSManager initialized")
     
-    def _parse_object_name(self, name: str) -> tuple[str, str]:
+    def _parse_object_name(self, name: str) -> tuple:
         """Parse object name"""
         if ':' in name:
             parts = name.split(':', 1)

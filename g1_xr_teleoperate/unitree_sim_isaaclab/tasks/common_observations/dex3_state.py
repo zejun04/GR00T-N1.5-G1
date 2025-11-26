@@ -59,8 +59,7 @@ def _get_dex3_dds_instance():
     
     if not _dds_initialized or _dex3_dds is None:
         try:
-            # dynamically import the DDS module
-            sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), 'dds'))
+            # import the DDS module directly
             from dds.dds_master import dds_manager
             
             _dex3_dds = dds_manager.get_object("dex3")

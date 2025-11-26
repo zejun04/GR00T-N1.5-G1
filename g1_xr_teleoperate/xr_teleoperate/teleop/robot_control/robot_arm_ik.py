@@ -143,22 +143,13 @@ class G1_29_ArmIK:
         self.opti.minimize(50 * self.translational_cost + self.rotation_cost + 0.02 * self.regularization_cost + 0.1 * self.smooth_cost)
 
         opts = {
-            # CasADi-level options
-            'expand': True, 
-            'detect_simple_bounds': True,
-            'calc_lam_p': False,  # https://github.com/casadi/casadi/wiki/FAQ:-Why-am-I-getting-%22NaN-detected%22in-my-optimization%3F
-            'print_time':False,   # print or not
-            # IPOPT solver options
-            'ipopt.sb': 'yes',    # disable Ipopt's license message
-            'ipopt.print_level': 0,
-            'ipopt.max_iter': 30, 
-            'ipopt.tol': 1e-4,
-            'ipopt.acceptable_tol': 5e-4,
-            'ipopt.acceptable_iter': 5,
-            'ipopt.warm_start_init_point': 'yes',
-            'ipopt.derivative_test': 'none',
-            'ipopt.jacobian_approximation': 'exact',
-            # 'ipopt.hessian_approximation': 'limited-memory',
+            'ipopt':{
+                'print_level':0,
+                'max_iter':50,
+                'tol':1e-6
+            },
+            'print_time':False,# print or not
+            'calc_lam_p':False # https://github.com/casadi/casadi/wiki/FAQ:-Why-am-I-getting-%22NaN-detected%22in-my-optimization%3F
         }
         self.opti.solver("ipopt", opts)
 
@@ -378,22 +369,13 @@ class G1_23_ArmIK:
         self.opti.minimize(50 * self.translational_cost + 0.5 * self.rotation_cost + 0.02 * self.regularization_cost + 0.1 * self.smooth_cost)
 
         opts = {
-            # CasADi-level options
-            'expand': True, 
-            'detect_simple_bounds': True,
-            'calc_lam_p': False,  # https://github.com/casadi/casadi/wiki/FAQ:-Why-am-I-getting-%22NaN-detected%22in-my-optimization%3F
-            'print_time':False,   # print or not
-            # IPOPT solver options
-            'ipopt.sb': 'yes',    # disable Ipopt's license message
-            'ipopt.print_level': 0,
-            'ipopt.max_iter': 30, 
-            'ipopt.tol': 1e-4,
-            'ipopt.acceptable_tol': 5e-4,
-            'ipopt.acceptable_iter': 5,
-            'ipopt.warm_start_init_point': 'yes',
-            'ipopt.derivative_test': 'none',
-            'ipopt.jacobian_approximation': 'exact',
-            # 'ipopt.hessian_approximation': 'limited-memory',
+            'ipopt':{
+                'print_level':0,
+                'max_iter':50,
+                'tol':1e-6
+            },
+            'print_time':False,# print or not
+            'calc_lam_p':False # https://github.com/casadi/casadi/wiki/FAQ:-Why-am-I-getting-%22NaN-detected%22in-my-optimization%3F
         }
         self.opti.solver("ipopt", opts)
 
@@ -638,22 +620,13 @@ class H1_2_ArmIK:
         self.opti.minimize(50 * self.translational_cost + self.rotation_cost + 0.02 * self.regularization_cost + 0.1 * self.smooth_cost)
 
         opts = {
-            # CasADi-level options
-            'expand': True, 
-            'detect_simple_bounds': True,
-            'calc_lam_p': False,  # https://github.com/casadi/casadi/wiki/FAQ:-Why-am-I-getting-%22NaN-detected%22in-my-optimization%3F
-            'print_time':False,   # print or not
-            # IPOPT solver options
-            'ipopt.sb': 'yes',    # disable Ipopt's license message
-            'ipopt.print_level': 0,
-            'ipopt.max_iter': 30, 
-            'ipopt.tol': 1e-4,
-            'ipopt.acceptable_tol': 5e-4,
-            'ipopt.acceptable_iter': 5,
-            'ipopt.warm_start_init_point': 'yes',
-            'ipopt.derivative_test': 'none',
-            'ipopt.jacobian_approximation': 'exact',
-            # 'ipopt.hessian_approximation': 'limited-memory',
+            'ipopt':{
+                'print_level':0,
+                'max_iter':50,
+                'tol':1e-6
+            },
+            'print_time':False,# print or not
+            'calc_lam_p':False # https://github.com/casadi/casadi/wiki/FAQ:-Why-am-I-getting-%22NaN-detected%22in-my-optimization%3F
         }
         self.opti.solver("ipopt", opts)
 
@@ -901,22 +874,13 @@ class H1_ArmIK:
         self.opti.minimize(50 * self.translational_cost + 0.5 * self.rotation_cost + 0.02 * self.regularization_cost + 0.1 * self.smooth_cost)
 
         opts = {
-            # CasADi-level options
-            'expand': True, 
-            'detect_simple_bounds': True,
-            'calc_lam_p': False,  # https://github.com/casadi/casadi/wiki/FAQ:-Why-am-I-getting-%22NaN-detected%22in-my-optimization%3F
-            'print_time':False,   # print or not
-            # IPOPT solver options
-            'ipopt.sb': 'yes',    # disable Ipopt's license message
-            'ipopt.print_level': 0,
-            'ipopt.max_iter': 30, 
-            'ipopt.tol': 1e-4,
-            'ipopt.acceptable_tol': 5e-4,
-            'ipopt.acceptable_iter': 5,
-            'ipopt.warm_start_init_point': 'yes',
-            'ipopt.derivative_test': 'none',
-            'ipopt.jacobian_approximation': 'exact',
-            # 'ipopt.hessian_approximation': 'limited-memory',
+            'ipopt':{
+                'print_level':0,
+                'max_iter':50,
+                'tol':1e-6
+            },
+            'print_time':False,# print or not
+            'calc_lam_p':False # https://github.com/casadi/casadi/wiki/FAQ:-Why-am-I-getting-%22NaN-detected%22in-my-optimization%3F
         }
         self.opti.solver("ipopt", opts)
 

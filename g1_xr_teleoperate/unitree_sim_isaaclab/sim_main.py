@@ -368,10 +368,8 @@ def main():
         print(f"Failed to create control configuration: {e}")
         return
     
-    # create controller
-
+    # create DDS objects first (before action provider)
     if not args_cli.replay_data:
-
         print("========= create dds =========")
         try:
             reset_pose_dds,sim_state_dds,dds_manager = create_dds_objects(args_cli,env)
@@ -394,8 +392,8 @@ def main():
         if args_cli.action_source != "replay":
             args_cli.action_source = "replay"
         print("========= get data json list success =========")
-    # create action provider
     
+    # create action provider
     print(f"\ncreate action provider: {args_cli.action_source}...")
     try:
         print(f"args_cli.task: {args_cli.task}")

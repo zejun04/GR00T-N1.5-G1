@@ -55,8 +55,7 @@ def _get_inspire_dds_instance():
     
     if not _dds_initialized or _inspire_dds is None:
         try:
-            # dynamically import the DDS module
-            sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), 'dds'))
+            # import the DDS module directly
             from dds.dds_master import dds_manager
             _inspire_dds = dds_manager.get_object("inspire")
             print("[Observations] DDS communication instance obtained")

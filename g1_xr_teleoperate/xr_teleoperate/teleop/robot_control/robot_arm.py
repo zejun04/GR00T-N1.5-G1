@@ -81,11 +81,8 @@ class G1_29_ArmController:
         self._gradual_time = None
 
         # initialize lowcmd publisher and lowstate subscriber
-        if self.simulation_mode:
-            ChannelFactoryInitialize(1)
-        else:
-            ChannelFactoryInitialize(0)
-
+        # 需要确保dds信道保持一致sim_env是(1)
+        ChannelFactoryInitialize(1)
         if self.motion_mode:
             self.lowcmd_publisher = ChannelPublisher(kTopicLowCommand_Motion, hg_LowCmd)
         else:
@@ -101,7 +98,7 @@ class G1_29_ArmController:
         self.subscribe_thread.start()
 
         while not self.lowstate_buffer.GetData():
-            time.sleep(0.1)
+            time.sleep(0.01)
             logger_mp.warning("[G1_29_ArmController] Waiting to subscribe dds...")
         logger_mp.info("[G1_29_ArmController] Subscribe dds ok.")
 
@@ -112,9 +109,9 @@ class G1_29_ArmController:
         self.msg.mode_machine = self.get_mode_machine()
 
         self.all_motor_q = self.get_current_motor_q()
-        logger_mp.debug(f"Current all body motor state q:\n{self.all_motor_q} \n")
-        logger_mp.debug(f"Current two arms motor state q:\n{self.get_current_dual_arm_q()}\n")
-        logger_mp.info("Lock all joints except two arms...")
+        logger_mp.info(f"Current all body motor state q:\n{self.all_motor_q} \n")
+        logger_mp.info(f"Current two arms motor state q:\n{self.get_current_dual_arm_q()}\n")
+        logger_mp.info("Lock all joints except two arms...\n")
 
         arm_indices = set(member.value for member in G1_29_JointArmIndex)
         for id in G1_29_JointIndex:
@@ -134,7 +131,7 @@ class G1_29_ArmController:
                     self.msg.motor_cmd[id].kp = self.kp_high
                     self.msg.motor_cmd[id].kd = self.kd_high
             self.msg.motor_cmd[id].q  = self.all_motor_q[id]
-        logger_mp.info("Lock OK!")
+        logger_mp.info("Lock OK!\n")
 
         # initialize publish thread
         self.publish_thread = threading.Thread(target=self._ctrl_motor_state)
@@ -142,7 +139,7 @@ class G1_29_ArmController:
         self.publish_thread.daemon = True
         self.publish_thread.start()
 
-        logger_mp.info("Initialize G1_29_ArmController OK!")
+        logger_mp.info("Initialize G1_29_ArmController OK!\n")
 
     def _subscribe_motor_state(self):
         while True:
@@ -232,7 +229,7 @@ class G1_29_ArmController:
             current_q = self.get_current_dual_arm_q()
             if np.all(np.abs(current_q) < tolerance):
                 if self.motion_mode:
-                    for weight in np.linspace(1, 0, num=101):
+                    for weight in np.arange(1, 0, -0.01):
                         self.msg.motor_cmd[G1_29_JointIndex.kNotUsedJoint0].q = weight;
                         time.sleep(0.02)
                 logger_mp.info("[G1_29_ArmController] both arms have reached the home position.")
@@ -345,10 +342,9 @@ class G1_29_JointIndex(IntEnum):
     kNotUsedJoint5 = 34
 
 class G1_23_ArmController:
-    def __init__(self, motion_mode = False, simulation_mode = False):
+    def __init__(self, simulation_mode = False):
         self.simulation_mode = simulation_mode
-        self.motion_mode = motion_mode
-
+        
         logger_mp.info("Initialize G1_23_ArmController...")
         self.q_target = np.zeros(10)
         self.tauff_target = np.zeros(10)
@@ -369,15 +365,8 @@ class G1_23_ArmController:
         self._gradual_time = None
 
         # initialize lowcmd publisher and lowstate subscriber
-        if self.simulation_mode:
-            ChannelFactoryInitialize(1)
-        else:
-            ChannelFactoryInitialize(0)
-        
-        if self.motion_mode:
-            self.lowcmd_publisher = ChannelPublisher(kTopicLowCommand_Motion, hg_LowCmd)
-        else:
-            self.lowcmd_publisher = ChannelPublisher(kTopicLowCommand_Debug, hg_LowCmd)
+        ChannelFactoryInitialize(0)
+        self.lowcmd_publisher = ChannelPublisher(kTopicLowCommand_Debug, hg_LowCmd)
         self.lowcmd_publisher.Init()
         self.lowstate_subscriber = ChannelSubscriber(kTopicLowState, hg_LowState)
         self.lowstate_subscriber.Init()
@@ -389,7 +378,7 @@ class G1_23_ArmController:
         self.subscribe_thread.start()
 
         while not self.lowstate_buffer.GetData():
-            time.sleep(0.1)
+            time.sleep(0.01)
             logger_mp.warning("[G1_23_ArmController] Waiting to subscribe dds...")
         logger_mp.info("[G1_23_ArmController] Subscribe dds ok.")
 
@@ -402,7 +391,7 @@ class G1_23_ArmController:
         self.all_motor_q = self.get_current_motor_q()
         logger_mp.info(f"Current all body motor state q:\n{self.all_motor_q} \n")
         logger_mp.info(f"Current two arms motor state q:\n{self.get_current_dual_arm_q()}\n")
-        logger_mp.info("Lock all joints except two arms...")
+        logger_mp.info("Lock all joints except two arms...\n")
 
         arm_indices = set(member.value for member in G1_23_JointArmIndex)
         for id in G1_23_JointIndex:
@@ -422,7 +411,7 @@ class G1_23_ArmController:
                     self.msg.motor_cmd[id].kp = self.kp_high
                     self.msg.motor_cmd[id].kd = self.kd_high
             self.msg.motor_cmd[id].q  = self.all_motor_q[id]
-        logger_mp.info("Lock OK!")
+        logger_mp.info("Lock OK!\n")
 
         # initialize publish thread
         self.publish_thread = threading.Thread(target=self._ctrl_motor_state)
@@ -430,7 +419,7 @@ class G1_23_ArmController:
         self.publish_thread.daemon = True
         self.publish_thread.start()
 
-        logger_mp.info("Initialize G1_23_ArmController OK!")
+        logger_mp.info("Initialize G1_23_ArmController OK!\n")
 
     def _subscribe_motor_state(self):
         while True:
@@ -451,9 +440,6 @@ class G1_23_ArmController:
         return cliped_arm_q_target
 
     def _ctrl_motor_state(self):
-        if self.motion_mode:
-            self.msg.motor_cmd[G1_23_JointIndex.kNotUsedJoint0].q = 1.0;
-
         while True:
             start_time = time.time()
 
@@ -519,10 +505,6 @@ class G1_23_ArmController:
         while current_attempts < max_attempts:
             current_q = self.get_current_dual_arm_q()
             if np.all(np.abs(current_q) < tolerance):
-                if self.motion_mode:
-                    for weight in np.linspace(1, 0, num=101):
-                        self.msg.motor_cmd[G1_23_JointIndex.kNotUsedJoint0].q = weight;
-                        time.sleep(0.02)
                 logger_mp.info("[G1_23_ArmController] both arms have reached the home position.")
                 break
             current_attempts += 1
@@ -625,9 +607,8 @@ class G1_23_JointIndex(IntEnum):
     kNotUsedJoint5 = 34
 
 class H1_2_ArmController:
-    def __init__(self, motion_mode = False, simulation_mode = False):
+    def __init__(self, simulation_mode = False):
         self.simulation_mode = simulation_mode
-        self.motion_mode = motion_mode
         
         logger_mp.info("Initialize H1_2_ArmController...")
         self.q_target = np.zeros(14)
@@ -649,15 +630,8 @@ class H1_2_ArmController:
         self._gradual_time = None
 
         # initialize lowcmd publisher and lowstate subscriber
-        if self.simulation_mode:
-            ChannelFactoryInitialize(1)
-        else:
-            ChannelFactoryInitialize(0)
-
-        if self.motion_mode:
-            self.lowcmd_publisher = ChannelPublisher(kTopicLowCommand_Motion, hg_LowCmd)
-        else:
-            self.lowcmd_publisher = ChannelPublisher(kTopicLowCommand_Debug, hg_LowCmd)
+        ChannelFactoryInitialize(0)
+        self.lowcmd_publisher = ChannelPublisher(kTopicLowCommand_Debug, hg_LowCmd)
         self.lowcmd_publisher.Init()
         self.lowstate_subscriber = ChannelSubscriber(kTopicLowState, hg_LowState)
         self.lowstate_subscriber.Init()
@@ -669,7 +643,7 @@ class H1_2_ArmController:
         self.subscribe_thread.start()
 
         while not self.lowstate_buffer.GetData():
-            time.sleep(0.1)
+            time.sleep(0.01)
             logger_mp.warning("[H1_2_ArmController] Waiting to subscribe dds...")
         logger_mp.info("[H1_2_ArmController] Subscribe dds ok.")
 
@@ -682,7 +656,7 @@ class H1_2_ArmController:
         self.all_motor_q = self.get_current_motor_q()
         logger_mp.info(f"Current all body motor state q:\n{self.all_motor_q} \n")
         logger_mp.info(f"Current two arms motor state q:\n{self.get_current_dual_arm_q()}\n")
-        logger_mp.info("Lock all joints except two arms...")
+        logger_mp.info("Lock all joints except two arms...\n")
 
         arm_indices = set(member.value for member in H1_2_JointArmIndex)
         for id in H1_2_JointIndex:
@@ -702,7 +676,7 @@ class H1_2_ArmController:
                     self.msg.motor_cmd[id].kp = self.kp_high
                     self.msg.motor_cmd[id].kd = self.kd_high
             self.msg.motor_cmd[id].q  = self.all_motor_q[id]
-        logger_mp.info("Lock OK!")
+        logger_mp.info("Lock OK!\n")
 
         # initialize publish thread
         self.publish_thread = threading.Thread(target=self._ctrl_motor_state)
@@ -710,7 +684,7 @@ class H1_2_ArmController:
         self.publish_thread.daemon = True
         self.publish_thread.start()
 
-        logger_mp.info("Initialize H1_2_ArmController OK!")
+        logger_mp.info("Initialize H1_2_ArmController OK!\n")
 
     def _subscribe_motor_state(self):
         while True:
@@ -731,9 +705,6 @@ class H1_2_ArmController:
         return cliped_arm_q_target
 
     def _ctrl_motor_state(self):
-        if self.motion_mode:
-            self.msg.motor_cmd[H1_2_JointIndex.kNotUsedJoint0].q = 1.0;
-
         while True:
             start_time = time.time()
 
@@ -799,10 +770,6 @@ class H1_2_ArmController:
         while current_attempts < max_attempts:
             current_q = self.get_current_dual_arm_q()
             if np.all(np.abs(current_q) < tolerance):
-                if self.motion_mode:
-                    for weight in np.linspace(1, 0, num=101):
-                        self.msg.motor_cmd[H1_2_JointIndex.kNotUsedJoint0].q = weight;
-                        time.sleep(0.02)
                 logger_mp.info("[H1_2_ArmController] both arms have reached the home position.")
                 break
             current_attempts += 1
@@ -933,10 +900,7 @@ class H1_ArmController:
         self._gradual_time = None
 
         # initialize lowcmd publisher and lowstate subscriber
-        if self.simulation_mode:
-            ChannelFactoryInitialize(1)
-        else:
-            ChannelFactoryInitialize(0)
+        ChannelFactoryInitialize(0)
         self.lowcmd_publisher = ChannelPublisher(kTopicLowCommand_Debug, go_LowCmd)
         self.lowcmd_publisher.Init()
         self.lowstate_subscriber = ChannelSubscriber(kTopicLowState, go_LowState)
@@ -949,7 +913,7 @@ class H1_ArmController:
         self.subscribe_thread.start()
 
         while not self.lowstate_buffer.GetData():
-            time.sleep(0.1)
+            time.sleep(0.01)
             logger_mp.warning("[H1_ArmController] Waiting to subscribe dds...")
         logger_mp.info("[H1_ArmController] Subscribe dds ok.")
 
@@ -964,7 +928,7 @@ class H1_ArmController:
         self.all_motor_q = self.get_current_motor_q()
         logger_mp.info(f"Current all body motor state q:\n{self.all_motor_q} \n")
         logger_mp.info(f"Current two arms motor state q:\n{self.get_current_dual_arm_q()}\n")
-        logger_mp.info("Lock all joints except two arms...")
+        logger_mp.info("Lock all joints except two arms...\n")
 
         for id in H1_JointIndex:
             if self._Is_weak_motor(id):
@@ -976,7 +940,7 @@ class H1_ArmController:
                 self.msg.motor_cmd[id].kd = self.kd_high
                 self.msg.motor_cmd[id].mode = 0x0A
             self.msg.motor_cmd[id].q  = self.all_motor_q[id]
-        logger_mp.info("Lock OK!")
+        logger_mp.info("Lock OK!\n")
 
         # initialize publish thread
         self.publish_thread = threading.Thread(target=self._ctrl_motor_state)
@@ -984,7 +948,7 @@ class H1_ArmController:
         self.publish_thread.daemon = True
         self.publish_thread.start()
 
-        logger_mp.info("Initialize H1_ArmController OK!")
+        logger_mp.info("Initialize H1_ArmController OK!\n")
 
     def _subscribe_motor_state(self):
         while True:

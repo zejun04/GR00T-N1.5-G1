@@ -113,8 +113,7 @@ def _get_g1_robot_dds_instance():
     
     if not _dds_initialized or _g1_robot_dds is None:
         try:
-            # dynamically import the DDS module
-            sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), 'dds'))
+            # import the DDS module directly
             from dds.dds_master import dds_manager
             print(f"dds_manager: {dds_manager}")
             _g1_robot_dds = dds_manager.get_object("g129")
