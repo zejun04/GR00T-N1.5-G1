@@ -43,6 +43,11 @@ class GR00TActionProvider:
         self.last_sequence_time = 0
         self.sequence_request_interval = 2.0  # 每2秒请求新序列
         
+        # 动作平滑相关属性
+        self.last_action = None
+        self.smoothing_factor = 0.3  # 平滑因子 (0-1)，越小越平滑
+        self.action_threshold = 0.01  # 动作变化阈值
+        
         # 检查环境的动作空间
         self._check_action_space()
         
@@ -256,6 +261,7 @@ class GR00TActionProvider:
             return self._get_default_action()
         
     
+    
     def _build_full_action_vector(self, action_dict: Dict[str, np.ndarray]) -> np.ndarray:
         """
         构建完整的43维动作向量
@@ -268,17 +274,19 @@ class GR00TActionProvider:
             # 创建43维的零向量
             full_action = np.zeros(43, dtype=np.float32)
             
-            # 映射GR00T动作到完整的关节空间[左闭，右开)
-            # action.left/right_arm/hand is provided by GR00T
-            # index,example 15-21 is used for isaac_sim
-            # fruit dataset
-            # action_mappings = [
-            #     ('action.left_arm', 15, 22),    # 左臂 -> 索引15-21
-            #     ('action.left_hand', 29, 36),   # 右臂 -> 索引22-28
-            #     ('action.right_arm', 22, 29),   # 左手 -> 索引29-35
-            #     ('action.right_hand', 36, 43)   # 右手 -> 索引36-42
-            # ]
-
+            # 获取当前机器人状态，用于平滑过渡
+            current_joint_pos = None
+            try:
+                if hasattr(self.env, 'robot') and hasattr(self.env.robot, 'data'):
+                    current_joint_pos = self.env.robot.data.joint_pos[0].detach().cpu().numpy()
+                elif hasattr(self.env.scene, 'robot'):
+                    robot = self.env.scene['robot']
+                    current_joint_pos = robot.data.joint_pos[0].detach().cpu().numpy()
+            except Exception as e:
+                print(f"⚠️ 无法获取当前关节位置: {e}")
+            
+            # 映射GR00T动作到完整的关节空间
+            # 修正动作映射顺序，确保左右对称
             action_mappings = [
                 ('action.left_arm', 15, 22),    # 左臂 -> 索引15-21
                 ('action.right_arm', 22, 29),   # 右臂 -> 索引22-28
@@ -313,10 +321,6 @@ class GR00TActionProvider:
                     # 使用零向量填充
                     full_action[start_idx:end_idx] = np.zeros(dim, dtype=np.float32)
             
-            
-            # 对于未映射的部分（腿部、腰部等），保持为零
-            # 这些部分将由仿真环境处理或保持默认位置
-            # print("G1_action",full_action)
             return full_action
             
         except Exception as e:
@@ -393,6 +397,14 @@ class GR00TActionProvider:
                 "annotation.human.task_description": ["stack three block"]
             }
             
+            # 验证观测数据
+            print("🔍 观测数据验证:")
+            for key, value in observation.items():
+                if isinstance(value, np.ndarray):
+                    print(f"   {key}: shape={value.shape}, dtype={value.dtype}, range=[{value.min():.3f}, {value.max():.3f}]")
+                else:
+                    print(f"   {key}: {type(value)}")
+            
             print(f"指令：{observation['annotation.human.task_description']}")
             # print("观测是：", observation)
             return observation
@@ -447,10 +459,11 @@ class GR00TActionProvider:
                     
                 else:
                     print(f"⚠️ 未找到相机数据: {cam_name}")
-                    # 为缺失的相机提供测试数据
-                    test_data = self._get_test_camera_data()
+                    # 为缺失的相机提供零数据而不是测试视频，避免干扰
+                    zero_data = np.zeros((1, 480, 640, 3), dtype=np.uint8)
                     output_key = camera_mapping[cam_name]
-                    camera_data[output_key] = test_data
+                    camera_data[output_key] = zero_data
+                    print(f"⚠️ 使用零数据替代相机: {cam_name}")
             
             return camera_data
             
@@ -559,8 +572,6 @@ class GR00TActionProvider:
             
             # 右手: 索引 36-42 (7个关节)
             state_data["right_hand"] = joint_pos[36:43].reshape(1, 7)
-            print("机器人关节状态:",state_data["left_hand"])
-            
             
             # Debug 打印
             if hasattr(self, '_debug_count'):
@@ -568,7 +579,7 @@ class GR00TActionProvider:
             else:
                 self._debug_count = 0
             
-            if self._debug_count % 10 == 0:
+            if self._debug_count % 20 == 0:  # 减少打印频率
                 print(f"🔍 机器人状态已更新:")
                 for key, value in state_data.items():
                     print(f"   {key}: shape={value.shape}, range=[{value.min():.3f}, {value.max():.3f}]")
@@ -586,6 +597,8 @@ class GR00TActionProvider:
         print("🔄 GR00T Action Provider reset")
         self.action_sequence = None
         self.current_step = 0
+        self.last_action = None  # 重置平滑状态
+        self._debug_count = 0   # 重置调试计数器
     
     def close(self):
         """关闭连接"""

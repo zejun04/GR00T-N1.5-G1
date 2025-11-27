@@ -32,6 +32,8 @@ python scripts/inference_service.py --server  --http-server --port 8000 --embodi
 python sim_main.py --device cuda:0 --enable_cameras --task Isaac-Stack-RgyBlock-G129-Dex3-Joint --action_source gr00t --robot_type g129 --enable_dex3_dds 
 
 
+python sim_main.py --device cuda:0 --enable_cameras --task Isaac-PickPlace-Cylinder-G129-Dex3-Joint --action_source gr00t --robot_type g129 --enable_dex3_dds
+
 G1选择----embodiment_tag为new_embodiment，凡是不在nvidia官方tag(EmbodimentTag.GR1、EmbodimentTag.OXE_DROID、EmbodimentTag.GENIE1_GRIPPER)出现的机器人都选择new_embodiment,且需要准备对应的--data_config
 
     video_keys = ["video.rs_view"]

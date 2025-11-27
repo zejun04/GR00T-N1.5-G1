@@ -73,7 +73,7 @@ if __name__ == '__main__':
         img_config = {
             'fps': 30,
             'head_camera_type': 'opencv',
-            'head_camera_image_shape': [480, 1280],  # Head camera resolution - 仿真环境使用双目相机
+            'head_camera_image_shape': [480, 640],  # Head camera resolution - 仿真环境front_camera是640x480
             'head_camera_id_numbers': [0],
             'wrist_camera_type': 'opencv',
             'wrist_camera_image_shape': [480, 640],  # Wrist camera resolution
@@ -120,9 +120,9 @@ if __name__ == '__main__':
         wrist_img_shm = shared_memory.SharedMemory(create = True, size = np.prod(wrist_img_shape) * np.uint8().itemsize)
         wrist_img_array = np.ndarray(wrist_img_shape, dtype = np.uint8, buffer = wrist_img_shm.buf)
         img_client = ImageClient(tv_img_shape = tv_img_shape, tv_img_shm_name = tv_img_shm.name, 
-                                 wrist_img_shape = wrist_img_shape, wrist_img_shm_name = wrist_img_shm.name)
+                                 wrist_img_shape = wrist_img_shape, wrist_img_shm_name = wrist_img_shm.name, server_address="127.0.0.1")
     else:
-        img_client = ImageClient(tv_img_shape = tv_img_shape, tv_img_shm_name = tv_img_shm.name)
+        img_client = ImageClient(tv_img_shape = tv_img_shape, tv_img_shm_name = tv_img_shm.name, server_address="127.0.0.1")
 
     image_receive_thread = threading.Thread(target = img_client.receive_process, daemon = True)
     image_receive_thread.daemon = True
@@ -228,6 +228,23 @@ if __name__ == '__main__':
                         publish_reset_category(1, reset_pose_publisher)
             # get input data
             tele_data = tv_wrapper.get_motion_state_data()
+            
+            # Debug hand tracking data
+            if args.xr_mode == 'hand':
+                logger_mp.info(f"[Hand Tracking] Left hand valid: {tele_data.left_arm_is_valid}, Right hand valid: {tele_data.right_arm_is_valid}")
+                logger_mp.info(f"[Hand Tracking] Left pinch: {tele_data.left_pinch_value}, Right pinch: {tele_data.right_pinch_value}")
+                logger_mp.info(f"[Hand Tracking] Left squeeze: {tele_data.left_squeeze_value}, Right squeeze: {tele_data.right_squeeze_value}")
+                if tele_data.left_arm_is_valid and tele_data.left_hand_pos is not None:
+                    logger_mp.info(f"[Hand Tracking] Left hand pos shape: {tele_data.left_hand_pos.shape}, first point: {tele_data.left_hand_pos[0]}")
+                if tele_data.right_arm_is_valid and tele_data.right_hand_pos is not None:
+                    logger_mp.info(f"[Hand Tracking] Right hand pos shape: {tele_data.right_hand_pos.shape}, first point: {tele_data.right_hand_pos[0]}")
+                
+                # Check if hand data is all zeros (indicating no tracking)
+                if tele_data.left_hand_pos is not None and np.all(tele_data.left_hand_pos == 0):
+                    logger_mp.warning("[Hand Tracking] Left hand data is all zeros - VR device may not be tracking")
+                if tele_data.right_hand_pos is not None and np.all(tele_data.right_hand_pos == 0):
+                    logger_mp.warning("[Hand Tracking] Right hand data is all zeros - VR device may not be tracking")
+            
             if (args.ee == 'dex3' or args.ee == 'inspire1') and args.xr_mode == 'hand':
                 with left_hand_pos_array.get_lock():
                     left_hand_pos_array[:] = tele_data.left_hand_pos.flatten()

@@ -8,11 +8,14 @@ import cv2
 import zmq
 import time
 import threading
-from image_server.shared_memory_utils import MultiImageReader
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from shared_memory_utils import MultiImageReader
 
 
 class ImageServer:
-    def __init__(self, fps=30, port=5555, Unit_Test=False):
+    def __init__(self, fps=30, port=5555, Unit_Test=False, max_port_attempts=10):
         """
         Multi-image server - read multi-image data from shared memory and publish it
         """
@@ -28,10 +31,26 @@ class ImageServer:
         # Initialize multi-image shared memory reader
         self.multi_image_reader = MultiImageReader()
 
-        # Set ZeroMQ context and socket
+        # Set ZeroMQ context and socket with port fallback
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.PUB)
-        self.socket.bind(f"tcp://*:{self.port}")
+        
+        # Try to bind to the specified port, if busy try next ports
+        current_port = port
+        for attempt in range(max_port_attempts):
+            try:
+                self.socket.bind(f"tcp://*:{current_port}")
+                self.port = current_port  # Update port to the actual bound port
+                print(f"[Image Server] Successfully bound to port {current_port}")
+                break
+            except zmq.error.ZMQError as e:
+                if "Address already in use" in str(e):
+                    print(f"[Image Server] Port {current_port} is busy, trying {current_port + 1}")
+                    current_port += 1
+                else:
+                    raise e
+        else:
+            raise RuntimeError(f"Could not bind to any port in range {port}-{current_port-1}")
 
         if self.Unit_Test:
             self._init_performance_metrics()
