@@ -41,12 +41,9 @@ class GR00TActionProvider:
         self.current_step = 0
         self.sequence_length = 16  # GR00T返回的序列长度
         self.last_sequence_time = 0
-        self.sequence_request_interval = 2.0  # 每2秒请求新序列
-        
-        # 动作平滑相关属性
-        self.last_action = None
-        self.smoothing_factor = 0.3  # 平滑因子 (0-1)，越小越平滑
-        self.action_threshold = 0.01  # 动作变化阈值
+        self.sequence_request_interval = 1.0  # 每1秒请求新序列
+        self.control_hz = 50.0  # 控制频率
+    
         
         # 检查环境的动作空间
         self._check_action_space()
@@ -104,7 +101,6 @@ class GR00TActionProvider:
         except Exception as e:
             print(f"❌ Failed to connect to GR00T service: {e}")
             print("Please make sure GR00T inference service is running:")
-            print("python scripts/inference_service.py --server --http-server --port 8000 --embodiment_tag gr1 --data_config so100")
             raise e
     
     def start(self):
@@ -137,8 +133,9 @@ class GR00TActionProvider:
             
             # 检查是否需要获取新的动作序列
             if (self.action_sequence is None or 
-                self.current_step >= self.sequence_length):
+                self.current_step >= self.sequence_length or current_time-self.last_sequence_time > self.sequence_request_interval):
                 
+                print("获取新的动作序列的间隔：",current_time- self.last_sequence_time)
                 # print("🔄 获取新的动作序列...")
                 self.action_sequence = self._get_new_action_sequence()
                 self.current_step = 0
@@ -146,10 +143,12 @@ class GR00TActionProvider:
 
             # 从序列中提取当前步骤的动作
             current_action = self._extract_step_action(self.action_sequence, self.current_step)
+            time.sleep(1/self.control_hz)
             self.current_step += 1
             
             # 将动作转换为仿真环境期望的格式
             action_tensor = self._convert_to_env_action(current_action)
+            # print(action_tensor)
             return action_tensor
                 
         except Exception as e:
@@ -241,17 +240,13 @@ class GR00TActionProvider:
         try:
             # 将动作字典转换为完整43维动作向量
             action_vector = self._build_full_action_vector(action_data)
-            
-            
-            # 确保动作维度
-            action_vector = self._ensure_action_dimension(action_vector)
-            
+             
             # 重塑为环境期望的形状
             action_vector = action_vector.reshape(self.action_shape)
             
             # 转换为torch张量
             action_tensor = torch.from_numpy(action_vector).to(self.env.device)
-            
+            # print(action_tensor)
             return action_tensor
             
         except Exception as e:
@@ -274,24 +269,14 @@ class GR00TActionProvider:
             # 创建43维的零向量
             full_action = np.zeros(43, dtype=np.float32)
             
-            # 获取当前机器人状态，用于平滑过渡
-            current_joint_pos = None
-            try:
-                if hasattr(self.env, 'robot') and hasattr(self.env.robot, 'data'):
-                    current_joint_pos = self.env.robot.data.joint_pos[0].detach().cpu().numpy()
-                elif hasattr(self.env.scene, 'robot'):
-                    robot = self.env.scene['robot']
-                    current_joint_pos = robot.data.joint_pos[0].detach().cpu().numpy()
-            except Exception as e:
-                print(f"⚠️ 无法获取当前关节位置: {e}")
             
             # 映射GR00T动作到完整的关节空间
-            # 修正动作映射顺序，确保左右对称
+            # 按照具体的关节索引顺序映射
             action_mappings = [
-                ('action.left_arm', 15, 22),    # 左臂 -> 索引15-21
-                ('action.right_arm', 22, 29),   # 右臂 -> 索引22-28
-                ('action.left_hand', 29, 36),   # 左手 -> 索引29-35
-                ('action.right_hand', 36, 43)   # 右手 -> 索引36-42
+                ('action.left_arm', [11, 15, 19, 21, 23, 25, 27]),    # 左臂关节索引
+                ('action.right_arm', [12, 16, 18, 20, 22, 24, 26]),   # 右臂关节索引
+                ('action.left_hand', [31, 37, 41, 30, 36, 29, 35]),   # 左手关节索引
+                ('action.right_hand', [34, 40, 42, 33, 39, 32, 38])    # 右手关节索引
             ]
             
             if hasattr(self, '_debug_count'):
@@ -300,27 +285,28 @@ class GR00TActionProvider:
                 self._debug_count = 0
 
             used_indices = 0
-            for key, start_idx, end_idx in action_mappings:
+            for key, indices in action_mappings:
                 if key in action_dict:
                     action_part = action_dict[key]
-                    dim = end_idx - start_idx
+                    dim = len(indices)
                     
                     if action_part.shape[0] == dim:
-                        
-                        full_action[start_idx:end_idx] = action_part
+                        # 按照指定的索引顺序映射动作
+                        for i, idx in enumerate(indices):
+                            full_action[idx] = action_part[i]
                         used_indices += dim
-                        # if self._debug_count % 10 == 0:
-                        #     print(f"✅ {key}:")
-                        #     print(f"   动作范围: [{action_part.min():.4f}, {action_part.max():.4f}]")
                     else:
                         print(f"⚠️ 动作部分 {key} 维度不匹配: {action_part.shape[0]} != {dim}")
                         # 使用零向量替代
-                        full_action[start_idx:end_idx] = np.zeros(dim, dtype=np.float32)
+                        for idx in indices:
+                            full_action[idx] = 0.0
                 else:
                     print(f"⚠️ 缺少动作部分: {key}")
                     # 使用零向量填充
-                    full_action[start_idx:end_idx] = np.zeros(dim, dtype=np.float32)
+                    for idx in indices:
+                        full_action[idx] = 0.0
             
+            # print(full_action)
             return full_action
             
         except Exception as e:
@@ -328,25 +314,6 @@ class GR00TActionProvider:
             # 返回零向量
             return np.zeros(43, dtype=np.float32)
     
-    def _ensure_action_dimension(self, action_vector: np.ndarray) -> np.ndarray:
-        """
-        确保动作向量与环境的动作空间维度匹配
-        """
-        current_dim = action_vector.shape[0]
-        
-        if current_dim == self.action_dim:
-            # 维度匹配，直接返回
-            return action_vector
-        elif current_dim > self.action_dim:
-            # 动作向量维度太大，截断
-            print(f"⚠️ 动作向量维度过大 ({current_dim} > {self.action_dim})，进行截断")
-            return action_vector[:self.action_dim]
-        else:
-            # 动作向量维度太小，填充零
-            print(f"⚠️ 动作向量维度过小 ({current_dim} < {self.action_dim})，进行零填充")
-            padded_action = np.zeros(self.action_dim, dtype=np.float32)
-            padded_action[:current_dim] = action_vector
-            return padded_action
     
     def prepare_observation(self) -> Dict[str, Any]:
         """
@@ -376,34 +343,34 @@ class GR00TActionProvider:
             # }
 
             # fruit dataset
-            # observation = {
-            #     "video.rs_view": camera_obs["rs_view"],
-            #     "state.left_arm": robot_state["left_arm"],
-            #     "state.left_hand": robot_state["left_hand"],
-            #     "state.right_arm": robot_state["right_arm"], 
-            #     "state.right_hand": robot_state["right_hand"],
-            #     "annotation.human.action.task_description": ["Pick up the red cube and put it on the plate"]
-            # }
-
-            # block dataset
             observation = {
-                "video.cam_left_high": camera_obs["cam_left_high"],
-                "video.cam_left_wrist": camera_obs["cam_left_wrist"],
-                "video.cam_right_wrist": camera_obs["cam_right_wrist"],
+                "video.rs_view": camera_obs["rs_view"],
                 "state.left_arm": robot_state["left_arm"],
                 "state.right_arm": robot_state["right_arm"], 
                 "state.left_hand": robot_state["left_hand"],
                 "state.right_hand": robot_state["right_hand"],
-                "annotation.human.task_description": ["stack three block"]
+                "annotation.human.task_description": ["pick the red cube on the table."]
             }
+
+            # block dataset
+            # observation = {
+            #     "video.cam_left_high": camera_obs["cam_left_high"],
+            #     "video.cam_left_wrist": camera_obs["cam_left_wrist"],
+            #     "video.cam_right_wrist": camera_obs["cam_right_wrist"],
+            #     "state.left_arm": robot_state["left_arm"],
+            #     "state.right_arm": robot_state["right_arm"], 
+            #     "state.left_hand": robot_state["left_hand"],
+            #     "state.right_hand": robot_state["right_hand"],
+            #     "annotation.human.task_description": ["stack three block"]
+            # }
             
             # 验证观测数据
-            print("🔍 观测数据验证:")
-            for key, value in observation.items():
-                if isinstance(value, np.ndarray):
-                    print(f"   {key}: shape={value.shape}, dtype={value.dtype}, range=[{value.min():.3f}, {value.max():.3f}]")
-                else:
-                    print(f"   {key}: {type(value)}")
+            # print("🔍 观测数据验证:")
+            # for key, value in observation.items():
+            #     if isinstance(value, np.ndarray):
+            #         print(f"   {key}: shape={value.shape}, dtype={value.dtype}, range=[{value.min():.3f}, {value.max():.3f}]")
+            #     else:
+            #         print(f"   {key}: {type(value)}")
             
             print(f"指令：{observation['annotation.human.task_description']}")
             # print("观测是：", observation)
@@ -424,13 +391,17 @@ class GR00TActionProvider:
             
         try:
             camera_data = {}
-            target_cam_names = ['front_camera', 'left_wrist_camera', 'right_wrist_camera']
-            camera_mapping = {
-                'front_camera': 'cam_left_high',
-                'left_wrist_camera': 'cam_left_wrist', 
-                'right_wrist_camera': 'cam_right_wrist'
-            }
+            # target_cam_names = ['front_camera', 'left_wrist_camera', 'right_wrist_camera']
+            # camera_mapping = {
+            #     'front_camera': 'cam_left_high',
+            #     'left_wrist_camera': 'cam_left_wrist', 
+            #     'right_wrist_camera': 'cam_right_wrist'
+            # }
             
+            target_cam_names = ['front_camera']
+            camera_mapping = {
+                'front_camera': 'rs_view'
+            }
             # 直接从环境场景传感器(Scene Sensors)获取 (Isaac Lab 标准方式)
             for cam_name in target_cam_names:
                 camera_image = None
@@ -562,24 +533,23 @@ class GR00TActionProvider:
             # 腰部: 索引 12-14 (3个关节)
             state_data["waist"] = joint_pos[12:15].reshape(1, 3)
             # 左臂: 索引 15-21 (7个关节)
-            state_data["left_arm"] = joint_pos[15:22].reshape(1, 7)
-            
+            state_data["left_arm"] = joint_pos[[11, 15, 19, 21, 23, 25, 27]].reshape(1, 7)            
             # 右臂: 索引 22-28 (7个关节)
-            state_data["right_arm"] = joint_pos[22:29].reshape(1, 7)
+            state_data["right_arm"] = joint_pos[[12, 16, 18, 20, 22, 24, 26]].reshape(1, 7)
             
             # 左手: 索引 29-35 (7个关节)
-            state_data["left_hand"] = joint_pos[29:36].reshape(1, 7)
+            state_data["left_hand"] = joint_pos[[31, 37, 41, 30, 36, 29, 35]].reshape(1, 7)
             
             # 右手: 索引 36-42 (7个关节)
-            state_data["right_hand"] = joint_pos[36:43].reshape(1, 7)
-            
-            # Debug 打印
+            state_data["right_hand"] = joint_pos[[34, 40, 42, 33, 39, 32, 38]].reshape(1, 7)
+
+            print("关节位置：", np.array2string(joint_pos, formatter={'float_kind':lambda x: "%.4f" % x}, separator=', '))            # Debug 打印
             if hasattr(self, '_debug_count'):
                 self._debug_count += 1
             else:
                 self._debug_count = 0
             
-            if self._debug_count % 20 == 0:  # 减少打印频率
+            if self._debug_count % 5 == 0:  # 减少打印频率
                 print(f"🔍 机器人状态已更新:")
                 for key, value in state_data.items():
                     print(f"   {key}: shape={value.shape}, range=[{value.min():.3f}, {value.max():.3f}]")
@@ -597,7 +567,6 @@ class GR00TActionProvider:
         print("🔄 GR00T Action Provider reset")
         self.action_sequence = None
         self.current_step = 0
-        self.last_action = None  # 重置平滑状态
         self._debug_count = 0   # 重置调试计数器
     
     def close(self):

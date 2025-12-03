@@ -4,9 +4,20 @@ dataset_list=(
  
 python scripts/gr00t_finetune.py \
     --no-tune_diffusion_model \
-    --dataset-path ${dataset_list[@]} \
-    --num-gpus 1 --batch-size 32  --output-dir ~/checkpoints/full-g1-mix-fruits/  \
+    --dataset-path /home/shenlan/.cache/huggingface/lerobot/gr00t/pickcube\
+    --num-gpus 1 --batch-size 32  --output-dir ~/checkpoints/pickcube/  \
     --data-config unitree_g1 --max-steps 20000
+    
+    
+python scripts/gr00t_finetune.py \
+  --no-tune_diffusion_model \
+  --dataset-path /home/shenlan/GR00T-VLA/Isaac-GR00T/datasets/pickcube \
+  --num-gpus 1 \
+  --batch-size 32 \
+  --output-dir ./checkpoints/pickcube/ \
+  --data-config unitree_g1 \
+  --max-steps 40000 \
+  --video-backend torchvision_av
 
 
 python scripts/eval_policy.py --plot \
@@ -17,6 +28,22 @@ python scripts/eval_policy.py --plot \
    --video_backend decord \
    --modality_keys left_arm right_arm
    
+   python scripts/eval_policy.py --plot \
+   --embodiment_tag new_embodiment \
+   --model_path checkpoints/pickcube/checkpoint-40000/ \
+   --data_config unitree_g1 \
+   --dataset_path datasets/pickcube/ \
+   --video_backend decord \
+   --modality_keys left_arm right_arm
+   
+   
+   python scripts/eval_policy.py --plot \
+   --embodiment_tag new_embodiment \
+   --model_path checkpoints/pickcube/checkpoint-40000/ \
+   --data_config unitree_g1 \
+   --dataset_path datasets/pickcube/ \
+   --video_backend torchvision_av \
+   --modality_keys left_arm right_arm
 
 python scripts/gr00t_finetune.py \
     --no-tune_diffusion_model \
@@ -28,11 +55,34 @@ python scripts/inference_service.py --server --http-server --port 8000 --embodim
 
 python scripts/inference_service.py --server  --http-server --port 8000 --embodiment_tag new_embodiment --data_config unitree_g1_block
 
+python scripts/inference_service.py --server  --http-server --port 8000 --embodiment_tag new_embodiment --data_config unitree_g1
 
 python sim_main.py --device cuda:0 --enable_cameras --task Isaac-Stack-RgyBlock-G129-Dex3-Joint --action_source gr00t --robot_type g129 --enable_dex3_dds 
 
 
 python sim_main.py --device cuda:0 --enable_cameras --task Isaac-PickPlace-Cylinder-G129-Dex3-Joint --action_source gr00t --robot_type g129 --enable_dex3_dds
+
+python sim_main.py --device cuda:0 --enable_cameras --task Isaac-PickPlace-RedBlock-G129-Dex3-Joint --action_source gr00t --robot_type g129 --enable_dex3_dds
+
+python src/lerobot/scripts/lerobot_train.py \
+    --dataset.repo_id=/home/shenlan/GR00T-VLA/Isaac-GR00T/datasets/pickcube \
+    --output_dir=./outputs/groot_training \
+    --policy.push_to_hub=false \
+    --policy.type=groot \
+    --policy.tune_diffusion_model=false \
+    --job_name=groot_training
+    
+    
+python src/lerobot/scripts/lerobot_train.py \
+    --batch_size=32 \
+    --steps=15000 \
+    --dataset.repo_id=/home/shenlan/GR00T-VLA/Isaac-GR00T/datasets/pickcube \
+    --output_dir=./outputs/groot_training \
+    --policy.push_to_hub=false \
+    --policy.type=groot \
+    --policy.tune_diffusion_model=false \
+    --job_name=groot_training
+
 
 G1选择----embodiment_tag为new_embodiment，凡是不在nvidia官方tag(EmbodimentTag.GR1、EmbodimentTag.OXE_DROID、EmbodimentTag.GENIE1_GRIPPER)出现的机器人都选择new_embodiment,且需要准备对应的--data_config
 

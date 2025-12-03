@@ -109,10 +109,12 @@ class RobotController:
         if self.action_provider:
             action = self.action_provider.get_action(self.env)
             if action is not None:
+                # print("get action from action provider:",str(self.action_provider))
                 self._last_action = action
         
         # if no action is obtained, use the pre-calculated fallback strategy
         if action is None:
+            print("[SimpleController] warning: using the last action as fallback")
             action = self._last_action
 
         action_time = perf_counter() - action_start
@@ -124,6 +126,7 @@ class RobotController:
                 pass
                 # self.env.sim.render()
             else:
+                print(action)
                 self.env.step(action)
             env_time = perf_counter() - env_start
             

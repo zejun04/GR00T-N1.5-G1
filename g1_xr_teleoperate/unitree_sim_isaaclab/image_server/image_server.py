@@ -15,7 +15,7 @@ from shared_memory_utils import MultiImageReader
 
 
 class ImageServer:
-    def __init__(self, fps=30, port=5555, Unit_Test=False, max_port_attempts=10):
+    def __init__(self, fps=30, port=5555, Unit_Test=False):
         """
         Multi-image server - read multi-image data from shared memory and publish it
         """
@@ -31,26 +31,10 @@ class ImageServer:
         # Initialize multi-image shared memory reader
         self.multi_image_reader = MultiImageReader()
 
-        # Set ZeroMQ context and socket with port fallback
+        # Set ZeroMQ context and socket
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.PUB)
-        
-        # Try to bind to the specified port, if busy try next ports
-        current_port = port
-        for attempt in range(max_port_attempts):
-            try:
-                self.socket.bind(f"tcp://*:{current_port}")
-                self.port = current_port  # Update port to the actual bound port
-                print(f"[Image Server] Successfully bound to port {current_port}")
-                break
-            except zmq.error.ZMQError as e:
-                if "Address already in use" in str(e):
-                    print(f"[Image Server] Port {current_port} is busy, trying {current_port + 1}")
-                    current_port += 1
-                else:
-                    raise e
-        else:
-            raise RuntimeError(f"Could not bind to any port in range {port}-{current_port-1}")
+        self.socket.bind(f"tcp://*:{self.port}")
 
         if self.Unit_Test:
             self._init_performance_metrics()
@@ -89,6 +73,7 @@ class ImageServer:
                 
                 if concatenated_image is None:
                     # if there is no image data, wait a moment and try again
+                    print("there is no img!")
                     time.sleep(0.01)
                     continue
                 
@@ -98,7 +83,9 @@ class ImageServer:
                 # if key == ord('q') or key == 27:  # 'q' 或 ESC 键退出
                 #     print("[Image Server] User pressed quit key")
                 #     break
-                
+                # print("save img")
+                # cv2.imwrite('./debug_concatenated_image.jpg', concatenated_image)  # for debug
+
                 # encode the images
                 ret, buffer = cv2.imencode('.jpg', concatenated_image)
                 if not ret:

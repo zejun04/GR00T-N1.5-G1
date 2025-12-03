@@ -52,7 +52,7 @@ class ArgsConfig:
     plot: bool = False
     """Whether to plot the images."""
 
-    modality_keys: List[str] = field(default_factory=lambda: ["right_arm", "left_arm"])
+    modality_keys: List[str] = field(default_factory=lambda: ["left_arm", "right_arm"])
     """Modality keys to evaluate."""
 
     data_config: str = "fourier_gr1_arms_only"
@@ -131,7 +131,7 @@ def main(args: ArgsConfig):
         modality_configs=modality,
         video_backend=args.video_backend,
         video_backend_kwargs=None,
-        transforms=None,  # We'll handle transforms separately through the policy
+        transforms=modality_transform,  # Use actual transforms
         embodiment_tag=args.embodiment_tag,
     )
 

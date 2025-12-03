@@ -43,45 +43,45 @@ class TableRedBlockSceneCfg(InteractiveSceneCfg): # inherit from the interactive
     )
 
     # 2. 浅绿色盘子配置 - 放置在机器人视野中央
-    plate = RigidObjectCfg(
-        prim_path="/World/envs/env_.*/Plate",
-        init_state=RigidObjectCfg.InitialStateCfg(
-            pos=[-4.2, -3.95, 0.82],  # 盘子位置，在机器人视野中央
-            rot=[1, 0, 0, 0]
-        ),
-        spawn=sim_utils.CylinderCfg(
-            radius=0.07,
-            height=0.02,
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(
-                disable_gravity=False,
-                retain_accelerations=False
-            ),
-            mass_props=sim_utils.MassPropertiesCfg(mass=0.5),
-            collision_props=sim_utils.CollisionPropertiesCfg(
-                collision_enabled=True,
-                contact_offset=0.01,
-                rest_offset=0.0
-            ),
-            visual_material=sim_utils.PreviewSurfaceCfg(
-                diffuse_color=(0.1, 0.8, 0.1),  # 浅绿色
-                metallic=0.1,
-                roughness=0.8
-            ),
-            physics_material=sim_utils.RigidBodyMaterialCfg(
-                friction_combine_mode="max",
-                restitution_combine_mode="min",
-                static_friction=2.0,
-                dynamic_friction=1.0,
-                restitution=0.1,
-            ),
-        ),
-    )
+    # plate = RigidObjectCfg(
+    #     prim_path="/World/envs/env_.*/Plate",
+    #     init_state=RigidObjectCfg.InitialStateCfg(
+    #         pos=[-4.2, -3.95, 0.82],  # 盘子位置，在机器人视野中央
+    #         rot=[1, 0, 0, 0]
+    #     ),
+    #     spawn=sim_utils.CylinderCfg(
+    #         radius=0.07,
+    #         height=0.02,
+    #         rigid_props=sim_utils.RigidBodyPropertiesCfg(
+    #             disable_gravity=False,
+    #             retain_accelerations=False
+    #         ),
+    #         mass_props=sim_utils.MassPropertiesCfg(mass=0.5),
+    #         collision_props=sim_utils.CollisionPropertiesCfg(
+    #             collision_enabled=True,
+    #             contact_offset=0.01,
+    #             rest_offset=0.0
+    #         ),
+    #         visual_material=sim_utils.PreviewSurfaceCfg(
+    #             diffuse_color=(0.1, 0.8, 0.1),  # 浅绿色
+    #             metallic=0.1,
+    #             roughness=0.8
+    #         ),
+    #         physics_material=sim_utils.RigidBodyMaterialCfg(
+    #             friction_combine_mode="max",
+    #             restitution_combine_mode="min",
+    #             static_friction=2.0,
+    #             dynamic_friction=1.0,
+    #             restitution=0.1,
+    #         ),
+    #     ),
+    # )
 
     # 3. 红色方块配置 - 放在盘子外面
     object = RigidObjectCfg(
         prim_path="/World/envs/env_.*/Object",
         init_state=RigidObjectCfg.InitialStateCfg(
-            pos=[-4.1, -3.98, 0.85],  # 方块位置，在盘子外面
+            pos=[-4.13, -3.98, 0.85],  # 方块位置，在盘子外面
             rot=[1, 0, 0, 0]
         ),
         spawn=sim_utils.CuboidCfg(

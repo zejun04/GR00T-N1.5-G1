@@ -178,6 +178,7 @@ class LeRobotSingleDataset(Dataset):
         self._video_path_pattern = self._get_video_path_pattern()
         self._chunk_size = self._get_chunk_size()
         self._tasks = self._get_tasks()
+        self._episodes_df = None  # Cache for episodes data
         self.curr_traj_data = None
         self.curr_traj_id = None
 
@@ -385,7 +386,18 @@ class LeRobotSingleDataset(Dataset):
                         state_action_meta.end,
                     )
                     stat = np.array(le_statistics[le_modality][stat_name])
-                    dataset_statistics[our_modality][subkey][stat_name] = stat[indices].tolist()
+                    # Check if stat has enough elements for the indices
+                    max_index = state_action_meta.end - 1
+                    if len(stat) > max_index:
+                        dataset_statistics[our_modality][subkey][stat_name] = stat[indices].tolist()
+                    else:
+                        # If stat is a scalar or has fewer elements than expected, 
+                        # use the whole stat or skip based on context
+                        if len(stat) == 1:
+                            dataset_statistics[our_modality][subkey][stat_name] = stat.tolist()
+                        else:
+                            # Skip this stat if it doesn't match expected dimensions
+                            continue
 
         # 3. Full dataset metadata
         metadata = DatasetMetadata(
@@ -400,14 +412,36 @@ class LeRobotSingleDataset(Dataset):
         """Get the trajectories in the dataset."""
         # Get trajectory lengths, IDs, and whitelist from dataset metadata
         episode_path = self.dataset_path / LE_ROBOT_EPISODE_FILENAME
-        with open(episode_path, "r") as f:
-            episode_metadata = [json.loads(line) for line in f]
-        trajectory_ids = []
-        trajectory_lengths = []
-        for episode in episode_metadata:
-            trajectory_ids.append(episode["episode_index"])
-            trajectory_lengths.append(episode["length"])
-        return np.array(trajectory_ids), np.array(trajectory_lengths)
+        
+        # Try to load as JSONL first (fallback to parquet if not found)
+        if episode_path.exists():
+            with open(episode_path, "r") as f:
+                episode_metadata = [json.loads(line) for line in f]
+            trajectory_ids = []
+            trajectory_lengths = []
+            for episode in episode_metadata:
+                trajectory_ids.append(episode["episode_index"])
+                trajectory_lengths.append(episode["length"])
+            return np.array(trajectory_ids), np.array(trajectory_lengths)
+        else:
+            # Try to load from parquet files
+            episodes_dir = self.dataset_path / "meta/episodes"
+            if episodes_dir.exists():
+                import pandas as pd
+                parquet_files = list(episodes_dir.glob("**/*.parquet"))
+                if parquet_files:
+                    # Read all parquet files and concatenate
+                    dfs = []
+                    for parquet_file in sorted(parquet_files):
+                        df = pd.read_parquet(parquet_file)
+                        dfs.append(df)
+                    combined_df = pd.concat(dfs, ignore_index=True)
+                    
+                    trajectory_ids = combined_df["episode_index"].tolist()
+                    trajectory_lengths = combined_df["length"].tolist()
+                    return np.array(trajectory_ids), np.array(trajectory_lengths)
+        
+        raise FileNotFoundError(f"Could not find episodes data in either {episode_path} or {self.dataset_path}/meta/episodes/")
 
     def _get_all_steps(self) -> list[tuple[int, int]]:
         """Get the trajectory IDs and base indices for all steps in the dataset.
@@ -480,10 +514,21 @@ class LeRobotSingleDataset(Dataset):
     def _get_tasks(self) -> pd.DataFrame:
         """Get the tasks for the dataset."""
         tasks_path = self.dataset_path / LE_ROBOT_TASKS_FILENAME
-        with open(tasks_path, "r") as f:
-            tasks = [json.loads(line) for line in f]
-        df = pd.DataFrame(tasks)
-        return df.set_index("task_index")
+        
+        # Try to load as JSONL first (fallback to parquet if not found)
+        if tasks_path.exists():
+            with open(tasks_path, "r") as f:
+                tasks = [json.loads(line) for line in f]
+            df = pd.DataFrame(tasks)
+            return df.set_index("task_index")
+        else:
+            # Try to load from parquet file
+            tasks_parquet_path = self.dataset_path / "meta/tasks.parquet"
+            if tasks_parquet_path.exists():
+                df = pd.read_parquet(tasks_parquet_path)
+                return df.set_index("task_index")
+        
+        raise FileNotFoundError(f"Could not find tasks data in either {tasks_path} or {self.dataset_path}/meta/tasks.parquet")
 
     def _check_integrity(self):
         """Use the config to check if the keys are valid and detect silent data corruption."""
@@ -580,12 +625,27 @@ class LeRobotSingleDataset(Dataset):
         if self.curr_traj_id == trajectory_id and self.curr_traj_data is not None:
             return self.curr_traj_data
         else:
-            chunk_index = self.get_episode_chunk(trajectory_id)
+            # Load episodes data once and cache it
+            if self._episodes_df is None:
+                self._episodes_df = pd.read_parquet(self.dataset_path / "meta/episodes/chunk-000/file-000.parquet")
+            
+            # Get chunk and file index from episodes metadata
+            trajectory_index = self.get_trajectory_index(trajectory_id)
+            episode_info = self._episodes_df.iloc[trajectory_index]
+            
+            chunk_index = episode_info["data/chunk_index"]
+            file_index = episode_info["data/file_index"]
+            
             parquet_path = self.dataset_path / self.data_path_pattern.format(
-                episode_chunk=chunk_index, episode_index=trajectory_id
+                chunk_index=chunk_index, file_index=file_index
             )
             assert parquet_path.exists(), f"Parquet file not found at {parquet_path}"
-            return pd.read_parquet(parquet_path)
+            data = pd.read_parquet(parquet_path)
+            
+            # Update cache
+            self.curr_traj_data = data
+            self.curr_traj_id = trajectory_id
+            return data
 
     def get_trajectory_index(self, trajectory_id: int) -> int:
         """Get the index of the trajectory in the dataset by the trajectory ID.
@@ -656,12 +716,21 @@ class LeRobotSingleDataset(Dataset):
         return output
 
     def get_video_path(self, trajectory_id: int, key: str) -> Path:
-        chunk_index = self.get_episode_chunk(trajectory_id)
         original_key = self.lerobot_modality_meta.video[key].original_key
         if original_key is None:
             original_key = key
+        
+        # Get episode info to extract chunk_index and file_index
+        if self._episodes_df is None:
+            self._episodes_df = pd.read_parquet(self.dataset_path / "meta/episodes/chunk-000/file-000.parquet")
+        
+        trajectory_index = self.get_trajectory_index(trajectory_id)
+        episode_info = self._episodes_df.iloc[trajectory_index]
+        chunk_index = episode_info["data/chunk_index"]
+        file_index = episode_info["data/file_index"]
+        
         video_filename = self.video_path_pattern.format(
-            episode_chunk=chunk_index, episode_index=trajectory_id, video_key=original_key
+            video_key=original_key, chunk_index=chunk_index, file_index=file_index
         )
         return self.dataset_path / video_filename
 
@@ -832,7 +901,13 @@ class LeRobotSingleDataset(Dataset):
             original_key = key
         for i in range(len(step_indices)):
             task_indices.append(self.curr_traj_data[original_key][step_indices[i]].item())
-        return self.tasks.loc[task_indices]["task"].tolist()
+        
+        # Handle different task data formats
+        if "task" in self.tasks.columns:
+            return self.tasks.loc[task_indices]["task"].tolist()
+        else:
+            # If task is in the index (like in pickcube dataset)
+            return self.tasks.index[task_indices].tolist()
 
     def get_data_by_modality(
         self,

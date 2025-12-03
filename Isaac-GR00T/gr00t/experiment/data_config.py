@@ -276,8 +276,8 @@ class So100DualCamDataConfig(So100DataConfig):
 
 class UnitreeG1DataConfig(BaseDataConfig):
     video_keys = ["video.rs_view"]
-    state_keys = ["state.left_arm", "state.left_hand", "state.right_arm", "state.right_hand"]
-    action_keys = ["action.left_arm", "action.left_hand", "action.right_arm", "action.right_hand"]
+    state_keys = ["state.left_arm", "state.right_arm", "state.left_hand" , "state.right_hand"]
+    action_keys = ["action.left_arm",  "action.right_arm", "action.left_hand","action.right_hand"]
     language_keys = ["annotation.human.task_description"]
     observation_indices = [0]
     action_indices = list(range(16))
@@ -318,8 +318,8 @@ class UnitreeG1DataConfig(BaseDataConfig):
             GR00TTransform(
                 state_horizon=len(self.observation_indices),
                 action_horizon=len(self.action_indices),
-                max_state_dim=64,
-                max_action_dim=32,
+                max_state_dim=64, # default 64
+                max_action_dim=32,# default 32
             ),
         ]
         return ComposedModalityTransform(transforms=transforms)

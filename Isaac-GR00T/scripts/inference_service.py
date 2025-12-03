@@ -71,13 +71,18 @@ from gr00t.model.policy import Gr00tPolicy
 class ArgsConfig:
     """Command line arguments for the inference service."""
 
-    model_path: str = "checkpoints/full-g1-mix-fruits/checkpoint-40000" #"nvidia/GR00T-N1.5-3B" checkpoints/full-g1-mix-fruits/checkpoint-20000  checkpoints-2/full-g1-mix-fruits/checkpoint-50000
+    model_path: str = "checkpoints/pickcube/checkpoint-40000" 
+    #"nvidia/GR00T-N1.5-3B" 
+    # checkpoints/full-g1-mix-fruits/checkpoint-20000  
+    # checkpoints-2/full-g1-mix-fruits/checkpoint-50000
+    # checkpoints/pickcube/checkpoint-40000
+    # /home/shenlan/GR00T-VLA/g1_xr_teleoperate/unitree_IL_lerobot/unitree_lerobot/lerobot/outputs/groot_training/checkpoints/040000
     """Path to the model checkpoint directory."""
 
-    embodiment_tag: Literal[tuple(EMBODIMENT_TAG_MAPPING.keys())] = "gr1"
+    embodiment_tag: Literal[tuple(EMBODIMENT_TAG_MAPPING.keys())] = "new_embodiment"
     """The embodiment tag for the model."""
 
-    data_config: str = "fourier_gr1_arms_waist"   # DATA_CONFIG_MAP
+    data_config: str = "unitree_g1"   # DATA_CONFIG_MAP
     """
     The name of the data config to use, e.g. so100, fourier_gr1_arms_only, unitree_g1, etc.
 
