@@ -274,7 +274,7 @@ class GR00TActionProvider:
             # 按照具体的关节索引顺序映射
             action_mappings = [
                 ('action.left_arm', [11, 15, 19, 21, 23, 25, 27]),    # 左臂关节索引
-                ('action.right_arm', [12, 16, 18, 20, 22, 24, 26]),   # 右臂关节索引
+                ('action.right_arm', [12, 16, 20, 22, 24, 26, 28]),   # 右臂关节索引
                 ('action.left_hand', [31, 37, 41, 30, 36, 29, 35]),   # 左手关节索引
                 ('action.right_hand', [34, 40, 42, 33, 39, 32, 38])    # 右手关节索引
             ]
