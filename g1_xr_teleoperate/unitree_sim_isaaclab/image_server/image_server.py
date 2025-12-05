@@ -73,7 +73,7 @@ class ImageServer:
                 
                 if concatenated_image is None:
                     # if there is no image data, wait a moment and try again
-                    print("there is no img!")
+                    # print("there is no img!")
                     time.sleep(0.01)
                     continue
                 

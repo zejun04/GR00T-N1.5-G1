@@ -71,7 +71,7 @@ from gr00t.model.policy import Gr00tPolicy
 class ArgsConfig:
     """Command line arguments for the inference service."""
 
-    model_path: str = "checkpoints/pickcube/checkpoint-40000" 
+    model_path: str = "checkpoints/pickcube/checkpoint-39000" 
     #"nvidia/GR00T-N1.5-3B" 
     # checkpoints/full-g1-mix-fruits/checkpoint-20000  
     # checkpoints-2/full-g1-mix-fruits/checkpoint-50000

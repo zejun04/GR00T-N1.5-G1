@@ -41,8 +41,6 @@ class GR00TActionProvider:
         self.current_step = 0
         self.sequence_length = 16  # GR00T返回的序列长度
         self.last_sequence_time = 0
-        self.sequence_request_interval = 1.0  # 每1秒请求新序列
-        self.control_hz = 50.0  # 控制频率
     
         
         # 检查环境的动作空间
@@ -133,22 +131,19 @@ class GR00TActionProvider:
             
             # 检查是否需要获取新的动作序列
             if (self.action_sequence is None or 
-                self.current_step >= self.sequence_length or current_time-self.last_sequence_time > self.sequence_request_interval):
+                self.current_step >= self.sequence_length):
                 
                 print("获取新的动作序列的间隔：",current_time- self.last_sequence_time)
-                # print("🔄 获取新的动作序列...")
                 self.action_sequence = self._get_new_action_sequence()
                 self.current_step = 0
                 self.last_sequence_time = current_time
 
             # 从序列中提取当前步骤的动作
             current_action = self._extract_step_action(self.action_sequence, self.current_step)
-            time.sleep(1/self.control_hz)
             self.current_step += 1
             
             # 将动作转换为仿真环境期望的格式
             action_tensor = self._convert_to_env_action(current_action)
-            # print(action_tensor)
             return action_tensor
                 
         except Exception as e:
@@ -223,7 +218,6 @@ class GR00TActionProvider:
                     print(f"⚠️ 步骤索引 {step_idx} 超出范围，使用最后一步")
             else:
                 current_action[key] = sequence
-        # print("动作是：",current_action)
         return current_action
     
     
@@ -349,7 +343,7 @@ class GR00TActionProvider:
                 "state.right_arm": robot_state["right_arm"], 
                 "state.left_hand": robot_state["left_hand"],
                 "state.right_hand": robot_state["right_hand"],
-                "annotation.human.task_description": ["pick the red cube on the table."]
+                "annotation.human.task_description": ["Pick up the red block and place it in the yellow frame."]
             }
 
             # block dataset
@@ -535,7 +529,7 @@ class GR00TActionProvider:
             # 左臂: 索引 15-21 (7个关节)
             state_data["left_arm"] = joint_pos[[11, 15, 19, 21, 23, 25, 27]].reshape(1, 7)            
             # 右臂: 索引 22-28 (7个关节)
-            state_data["right_arm"] = joint_pos[[12, 16, 18, 20, 22, 24, 26]].reshape(1, 7)
+            state_data["right_arm"] = joint_pos[[12, 16, 20, 22, 24, 26, 28]].reshape(1, 7)
             
             # 左手: 索引 29-35 (7个关节)
             state_data["left_hand"] = joint_pos[[31, 37, 41, 30, 36, 29, 35]].reshape(1, 7)
@@ -543,7 +537,7 @@ class GR00TActionProvider:
             # 右手: 索引 36-42 (7个关节)
             state_data["right_hand"] = joint_pos[[34, 40, 42, 33, 39, 32, 38]].reshape(1, 7)
 
-            print("关节位置：", np.array2string(joint_pos, formatter={'float_kind':lambda x: "%.4f" % x}, separator=', '))            # Debug 打印
+            # print("关节位置：", np.array2string(joint_pos, formatter={'float_kind':lambda x: "%.4f" % x}, separator=', '))            # Debug 打印
             if hasattr(self, '_debug_count'):
                 self._debug_count += 1
             else:

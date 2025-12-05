@@ -81,7 +81,7 @@ class TableRedBlockSceneCfg(InteractiveSceneCfg): # inherit from the interactive
     object = RigidObjectCfg(
         prim_path="/World/envs/env_.*/Object",
         init_state=RigidObjectCfg.InitialStateCfg(
-            pos=[-4.13, -3.98, 0.85],  # 方块位置，在盘子外面
+            pos=[-4.1, -4.01, 0.8],  # 方块位置，在盘子外面
             rot=[1, 0, 0, 0]
         ),
         spawn=sim_utils.CuboidCfg(
@@ -118,15 +118,16 @@ class TableRedBlockSceneCfg(InteractiveSceneCfg): # inherit from the interactive
 
     # Lights
     # 5. light configuration
-    # light = AssetBaseCfg(
-    #     prim_path="/World/light",   # light in the scene
-    #     spawn=sim_utils.DomeLightCfg(color=(0.75, 0.75, 0.75), # light color (white)
-    #                                  intensity=3000.0),    # light intensity
-    # )
+    light = AssetBaseCfg(
+        prim_path="/World/light",   # light in the scene
+        spawn=sim_utils.DomeLightCfg(color=(0.75, 0.75, 0.75), # light color (white)
+                                     intensity=3000.0),    # light intensity
+    )
+    
 
     # 世界相机 - 设置在机器人上方1.5米处
     world_camera = CameraBaseCfg.get_camera_config(
         prim_path="/World/PerspectiveCamera",
-        pos_offset=(-4.25, -4.03, 1.5),  # 在盘子/机器人视野中央上方1.5米
+        pos_offset=(0, 0, 1.5),  # 在盘子/机器人视野中央上方1.5米
         rot_offset=(1.0, 0.0, 0.0, 0.0)  # 默认朝向
     )

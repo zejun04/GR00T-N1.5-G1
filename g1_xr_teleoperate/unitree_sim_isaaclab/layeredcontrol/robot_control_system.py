@@ -126,7 +126,6 @@ class RobotController:
                 pass
                 # self.env.sim.render()
             else:
-                print(action)
                 self.env.step(action)
             env_time = perf_counter() - env_start
             

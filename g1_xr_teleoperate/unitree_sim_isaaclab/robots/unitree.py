@@ -138,7 +138,7 @@ G129_CFG_WITH_DEX3_BASE_FIX = ArticulationCfg(
                 ".*_wrist_.*_joint"
             ],
             effort_limit=None,
-            velocity_limit=None,
+            velocity_limit=50, # 添加速度限制，防止过大的关节抖动
              stiffness={  # increase the stiffness (kp)
                  ".*_shoulder_.*_joint": 300.0,
                  ".*_elbow_joint": 400.0,

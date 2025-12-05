@@ -50,7 +50,7 @@ parser.add_argument("--modify_light",  action="store_true", default=False, help=
 parser.add_argument("--modify_camera",  action="store_true", default=False,    help="modify camera")
 
 # performance analysis parameters
-parser.add_argument("--step_hz", type=int, default=50, help="control frequency")
+parser.add_argument("--step_hz", type=int, default=20, help="control frequency") # 20
 parser.add_argument("--enable_profiling", action="store_true", default=True, help="enable performance analysis")
 parser.add_argument("--profile_interval", type=int, default=500, help="performance analysis report interval (steps)")
 

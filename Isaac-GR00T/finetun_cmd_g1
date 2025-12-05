@@ -11,12 +11,12 @@ python scripts/gr00t_finetune.py \
     
 python scripts/gr00t_finetune.py \
   --no-tune_diffusion_model \
-  --dataset-path /home/shenlan/GR00T-VLA/Isaac-GR00T/datasets/pickcube \
+  --dataset-path /home/shenlan/GR00T-VLA/Isaac-GR00T/datasets/pickcube-1 \
   --num-gpus 1 \
   --batch-size 32 \
   --output-dir ./checkpoints/pickcube/ \
   --data-config unitree_g1 \
-  --max-steps 40000 \
+  --max-steps 35000 \
   --video-backend torchvision_av
 
 
@@ -39,9 +39,9 @@ python scripts/eval_policy.py --plot \
    
    python scripts/eval_policy.py --plot \
    --embodiment_tag new_embodiment \
-   --model_path checkpoints/pickcube/checkpoint-40000/ \
+   --model_path checkpoints/pickcube/checkpoint-39000/ \
    --data_config unitree_g1 \
-   --dataset_path datasets/pickcube/ \
+   --dataset_path datasets/pickcube-1/ \
    --video_backend torchvision_av \
    --modality_keys left_arm right_arm
 

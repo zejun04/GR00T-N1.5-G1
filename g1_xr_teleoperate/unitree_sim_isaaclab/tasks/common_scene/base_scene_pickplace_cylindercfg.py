@@ -90,28 +90,60 @@ class TableCylinderSceneCfg(InteractiveSceneCfg): # inherit from the interactive
     )
     # Object
     # 2. object configuration (cylinder)     
-    object = RigidObjectCfg(
-        prim_path="/World/envs/env_.*/Object",    # object in the scene
-        init_state=RigidObjectCfg.InitialStateCfg(pos=[-0.30, 0.35, 0.84], # initial position (pos) 
-                                                  rot=[1, 0, 0, 0]), # initial rotation (rot)
-        spawn=sim_utils.CylinderCfg(
-            radius=0.018,    # cylinder radius (radius)
-            height=0.35,     # cylinder height (height)
+    # object = RigidObjectCfg(
+    #     prim_path="/World/envs/env_.*/Object",    # object in the scene
+    #     init_state=RigidObjectCfg.InitialStateCfg(pos=[-0.30, 0.35, 0.84], # initial position (pos) 
+    #                                               rot=[1, 0, 0, 0]), # initial rotation (rot)
+    #     spawn=sim_utils.CylinderCfg(
+    #         radius=0.018,    # cylinder radius (radius)
+    #         height=0.35,     # cylinder height (height)
  
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(
-            ),    # rigid body properties configuration (rigid_props)
-            mass_props=sim_utils.MassPropertiesCfg(mass=0.4),    # mass properties configuration (mass)
-            collision_props=sim_utils.CollisionPropertiesCfg(),    # collision properties configuration (collision_props)
-            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.15, 0.15, 0.15), metallic=1.0),    # visual material configuration (visual_material)
-            physics_material=sim_utils.RigidBodyMaterialCfg(
-                friction_combine_mode="max",    # friction combine mode
-                restitution_combine_mode="min",    # restitution combine mode
-                static_friction=1.5,    # static friction coefficient
-                dynamic_friction=1.5,    # dynamic friction coefficient
-                restitution=0.0,    # restitution coefficient (no restitution)
-            ),
-        ),
-    )
+    #         rigid_props=sim_utils.RigidBodyPropertiesCfg(
+    #         ),    # rigid body properties configuration (rigid_props)
+    #         mass_props=sim_utils.MassPropertiesCfg(mass=0.4),    # mass properties configuration (mass)
+    #         collision_props=sim_utils.CollisionPropertiesCfg(),    # collision properties configuration (collision_props)
+    #         visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.15, 0.15, 0.15), metallic=1.0),    # visual material configuration (visual_material)
+    #         physics_material=sim_utils.RigidBodyMaterialCfg(
+    #             friction_combine_mode="max",    # friction combine mode
+    #             restitution_combine_mode="min",    # restitution combine mode
+    #             static_friction=1.5,    # static friction coefficient
+    #             dynamic_friction=1.5,    # dynamic friction coefficient
+    #             restitution=0.0,    # restitution coefficient (no restitution)
+    #         ),
+    #     ),
+    # )
+
+    # object = RigidObjectCfg(
+    #     prim_path="/World/envs/env_.*/Object",
+    #     init_state=RigidObjectCfg.InitialStateCfg(
+    #         pos=[-0.25, 0.40, 0.84],  # 方块位置
+    #         rot=[1, 0, 0, 0]
+    #     ),
+    #     spawn=sim_utils.CuboidCfg(
+    #         size=(0.04, 0.04, 0.04),
+    #         rigid_props=sim_utils.RigidBodyPropertiesCfg(
+    #             disable_gravity=False,
+    #             retain_accelerations=False
+    #         ),
+    #         mass_props=sim_utils.MassPropertiesCfg(mass=1.0),
+    #         collision_props=sim_utils.CollisionPropertiesCfg(
+    #             collision_enabled=True,
+    #             contact_offset=0.01,
+    #             rest_offset=0.0
+    #         ),
+    #         visual_material=sim_utils.PreviewSurfaceCfg(
+    #             diffuse_color=(0.9, 0.01, 0.0), metallic=0  # 红色
+    #         ),
+    #         physics_material=sim_utils.RigidBodyMaterialCfg(
+    #             friction_combine_mode="max",
+    #             restitution_combine_mode="min",
+    #             static_friction=10,
+    #             dynamic_friction=1.5,
+    #             restitution=0.01,
+    #         ),
+    #     ),
+    # )
+
     # Ground plane
     # 3. ground configuration
     # ground = AssetBaseCfg(
